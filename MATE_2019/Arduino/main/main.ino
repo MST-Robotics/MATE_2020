@@ -36,11 +36,15 @@ void setup() {
 }
 
 void loop() {
+  char driveCommands[35];
   // put your main code here, to run repeatedly:
-  if (Serial.available()){
+  if (Serial.available())
+    {
     String info = Serial.readStringUntil('\n');
     Serial.flush();
     writeString(info);
+    info.toCharArray(driveCommands, 35);
+    drive(driveCommands);
   }
 }
 
@@ -50,4 +54,63 @@ void writeString(String stringData) {
   {
     Serial.write(stringData[i]);   // Push each char 1 by 1 on each loop pass
   }
+}
+
+void drive(char array[])
+{
+  char *commands[35];
+  char *ptr = NULL;
+  byte index = 0;
+  ptr = strtok(array, ";");
+  while(ptr != NULL)
+  {
+      commands[index] = ptr;
+      index++;
+      ptr = strtok(NULL, ";");
+  }
+
+  setFR(atoi(commands[0]));
+  setFL(atoi(commands[3]));
+  setBL(atoi(commands[2]));
+  setBR(atoi(commands[1]));
+  
+  setUL(atoi(commands[4]));
+  setUR(atoi(commands[5]));
+  setUB(atoi(commands[6]));
+
+}
+
+void setFR(int num)
+{
+  FR.writeMicroseconds(num);
+}
+
+void setFL(int num)
+{
+  FL.writeMicroseconds(num);
+}
+
+void setBL(int num)
+{
+  BL.writeMicroseconds(num);
+}
+
+void setBR(int num)
+{
+  BR.writeMicroseconds(num);
+}
+
+void setUL(int num)
+{
+  UL.writeMicroseconds(num);
+}
+
+void setUR(int num)
+{
+  UR.writeMicroseconds(num);
+}
+
+void setUB(int num)
+{
+  UB.writeMicroseconds(num);
 }
