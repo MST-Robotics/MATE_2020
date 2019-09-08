@@ -57,34 +57,34 @@ class Gamepad
   Gamepad(int id);
   Gamepad(int id, double rDeadzone, double lDeadzone);
 
-  void Update();   // Update gamepad state
-  void Refresh();  // Prepare gamepad state for next cycle
+  void update();   // Update gamepad state
+  void refresh();  // Prepare gamepad state for next cycle
 
   // Set gamepad vibration ('rumble')
-  void SetRumble(double left = 0.0, double right = 0.0);
+  void setRumble(double left = 0.0, double right = 0.0);
 
-  int GetID();       // Return gamepad number
-  bool Connected();  // Check if gamepad is connected
+  int getID();       // Return gamepad number
+  bool connected();  // Check if gamepad is connected
 
   // Check if specified button is pressed
-  bool GetButtonPressed(int button);
+  bool getButtonPressed(int button);
 
   // Check if specified button is pressed - CURRENT frame only!
-  bool GetButtonDown(int button);
+  bool getButtonDown(int button);
 
   // Check stick deadzones (true if inside, false if outside)
-  bool LStick_InDeadzone();
-  bool RStick_InDeadzone();
+  bool lStick_InDeadzone();
+  bool rStick_InDeadzone();
 
-  double LeftStick_X();   // Return X axis of left stick
-  double LeftStick_Y();   // Return Y axis of left stick
-  double RightStick_X();  // Return X axis of right stick
-  double RightStick_Y();  // Return Y axis of right stick
+  double leftStick_X();   // Return X axis of left stick
+  double leftStick_Y();   // Return Y axis of left stick
+  double rightStick_X();  // Return X axis of right stick
+  double rightStick_Y();  // Return Y axis of right stick
 
-  double LeftTrigger();   // Return value of left trigger
-  double RightTrigger();  // Return value of right trigger
+  double leftTrigger();   // Return value of left trigger
+  double rightTrigger();  // Return value of right trigger
 
-  XINPUT_STATE GetState();  // Return gamepad state
+  XINPUT_STATE getState();  // Return gamepad state
 
  private:
   int pad_id;  // Gamepad number (1,2,3 or 4)

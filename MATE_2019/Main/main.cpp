@@ -10,8 +10,8 @@ using namespace std;
 char output[MAX_DATA_LENGTH];
 char incomingData[MAX_DATA_LENGTH];
 
-// change the name of the port with the port name of your computer
-// must remember that the backslashes are essential so do not remove them
+// Change the name of the port with the port name of your computer
+// Must remember that the backslashes are essential so do not remove them
 const char* port = "\\\\.\\COM7";
 SerialPort arduino(port);
 Gamepad gamepad = Gamepad(1);
@@ -43,22 +43,23 @@ void drive()
 {
   string data;
 
-  double FWD = gamepad.LeftStick_Y();
-  double STR = gamepad.LeftStick_X();
-  double RCCW = gamepad.RightStick_X();
+  double FWD = gamepad.leftStick_Y();
+  double STR = gamepad.leftStick_X();
+  double RCCW = gamepad.rightStick_X();
 
   // Will not reach full power diagonally because of controller input (depending
   // on controller)
-  // Add IMU input to rad45 if available for field orientation
+  // Add IMU input to rad45 for field orientation
   const double rad45 = 45.0 * 3.14159 / 180.0;
   double FR = (-STR * sin(rad45) + FWD * cos(rad45) + RCCW);
   double BR = (STR * cos(rad45) + FWD * sin(rad45) + RCCW);
   double BL = (-STR * sin(rad45) + FWD * cos(rad45) - RCCW);
   double FL = (STR * cos(rad45) + FWD * sin(rad45) - RCCW);
 
-  double UL = gamepad.RightTrigger() - gamepad.LeftTrigger();
-  double UR = gamepad.RightTrigger() - gamepad.LeftTrigger();
-  double UB = gamepad.RightTrigger() - gamepad.LeftTrigger();
+  // Add IMU input here for tilt correction
+  double UL = gamepad.rightTrigger() - gamepad.leftTrigger();
+  double UR = gamepad.rightTrigger() - gamepad.leftTrigger();
+  double UB = gamepad.rightTrigger() - gamepad.leftTrigger();
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
@@ -89,7 +90,7 @@ void drive()
   data.pop_back();
   data.append("\n");
 
-  if (gamepad.GetButtonDown(xButtons.A) || gamepad.GetButtonPressed(xButtons.B))
+  if (gamepad.getButtonDown(xButtons.A) || gamepad.getButtonPressed(xButtons.B))
   {
     cout << "Sending: " << data << endl;
     sendData(data);
@@ -107,7 +108,7 @@ int main()
     cout << " Error in Arduino port name" << endl << endl;
   }
 
-  if (gamepad.Connected())
+  if (gamepad.connected())
   {
     cout << " Gamepad 1 connected" << endl;
   }
@@ -116,11 +117,11 @@ int main()
     cout << " Gamepad 1 NOT connected" << endl;
   }
 
-  while (!gamepad.GetButtonPressed(xButtons.Back))
+  while (!gamepad.getButtonPressed(xButtons.Back))
   {
-    gamepad.Update();
+    gamepad.update();
     drive();
-    gamepad.Refresh();
+    gamepad.refresh();
   }
 
   cout << " Exiting" << endl;

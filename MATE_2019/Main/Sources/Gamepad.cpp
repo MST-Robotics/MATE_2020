@@ -35,7 +35,7 @@ XInput_ButtonIDs::XInput_ButtonIDs()
 Gamepad::Gamepad(int id)
 {
   pad_id = id - 1;
-  state = GetState();
+  state = getState();
 
   for (int i = 0; i < button_count; ++i)
   {
@@ -51,7 +51,7 @@ Gamepad::Gamepad(int id)
 Gamepad::Gamepad(int id, double rDeadzone, double lDeadzone)
 {
   pad_id = id - 1;
-  state = GetState();
+  state = getState();
 
   for (int i = 0; i < button_count; ++i)
   {
@@ -65,10 +65,10 @@ Gamepad::Gamepad(int id, double rDeadzone, double lDeadzone)
 }
 
 // Update gamepad state
-void Gamepad::Update()
+void Gamepad::update()
 {
   // Get current gamepad state
-  state = GetState();
+  state = getState();
 
   for (int i = 0; i < button_count; ++i)
   {
@@ -79,13 +79,13 @@ void Gamepad::Update()
 }
 
 // Update gamepad state for next cycle
-void Gamepad::Refresh()
+void Gamepad::refresh()
 {
   memcpy(prev_buttonStates, buttonStates, sizeof(prev_buttonStates));
 }
 
 // Set gamepad vibration ('rumble')
-void Gamepad::SetRumble(double left, double right)
+void Gamepad::setRumble(double left, double right)
 {
   // XInput vibration state
   XINPUT_VIBRATION rumble;
@@ -105,10 +105,10 @@ void Gamepad::SetRumble(double left, double right)
 }
 
 // Return gamepad number
-int Gamepad::GetID() { return pad_id; }
+int Gamepad::getID() { return pad_id; }
 
 // Check if gamepad is connected
-bool Gamepad::Connected()
+bool Gamepad::connected()
 {
   // Zero memory
   ZeroMemory(&state, sizeof(XINPUT_STATE));
@@ -119,35 +119,35 @@ bool Gamepad::Connected()
 }
 
 // Check if specified button is being pressed
-bool Gamepad::GetButtonPressed(int button)
+bool Gamepad::getButtonPressed(int button)
 {
   return state.Gamepad.wButtons & XINPUT_Buttons[button];
 }
 
 // Check if specified button was pressed - CURRENT frame only!
-bool Gamepad::GetButtonDown(int button)
+bool Gamepad::getButtonDown(int button)
 {
   return !prev_buttonStates[button] && buttonStates[button];
 }
 
 // Check deadzone on left joystick
-bool Gamepad::LStick_InDeadzone()
+bool Gamepad::lStick_InDeadzone()
 {
   return abs(state.Gamepad.sThumbLX) < LEFT_THUMB_DEADZONE &&
          abs(state.Gamepad.sThumbLY) < LEFT_THUMB_DEADZONE;
 }
 
 // Check deadzone on right joystick
-bool Gamepad::RStick_InDeadzone()
+bool Gamepad::rStick_InDeadzone()
 {
   return abs(state.Gamepad.sThumbRX) < RIGHT_THUMB_DEADZONE &&
          abs(state.Gamepad.sThumbRY) < RIGHT_THUMB_DEADZONE;
 }
 
 // Return X axis of left joystick
-double Gamepad::LeftStick_X()
+double Gamepad::leftStick_X()
 {
-  if (!LStick_InDeadzone())
+  if (!lStick_InDeadzone())
   {
     return state.Gamepad.sThumbLX / 32768.0;
   }
@@ -158,9 +158,9 @@ double Gamepad::LeftStick_X()
 }
 
 // Return Y axis of left joystick
-double Gamepad::LeftStick_Y()
+double Gamepad::leftStick_Y()
 {
-  if (!LStick_InDeadzone())
+  if (!lStick_InDeadzone())
   {
     return state.Gamepad.sThumbLY / 32768.0;
   }
@@ -171,9 +171,9 @@ double Gamepad::LeftStick_Y()
 }
 
 // Return X axis of right joysick
-double Gamepad::RightStick_X()
+double Gamepad::rightStick_X()
 {
-  if (!RStick_InDeadzone())
+  if (!rStick_InDeadzone())
   {
     return state.Gamepad.sThumbRX / 32768.0;
   }
@@ -184,9 +184,9 @@ double Gamepad::RightStick_X()
 }
 
 // Return Y axis of right joystick
-double Gamepad::RightStick_Y()
+double Gamepad::rightStick_Y()
 {
-  if (!RStick_InDeadzone())
+  if (!rStick_InDeadzone())
   {
     return state.Gamepad.sThumbRY / 32768.0;
   }
@@ -197,7 +197,7 @@ double Gamepad::RightStick_Y()
 }
 
 // Return value of left trigger
-double Gamepad::LeftTrigger()
+double Gamepad::leftTrigger()
 {
   BYTE axis = state.Gamepad.bLeftTrigger;
 
@@ -212,7 +212,7 @@ double Gamepad::LeftTrigger()
 }
 
 // Return value of right trigger
-double Gamepad::RightTrigger()
+double Gamepad::rightTrigger()
 {
   BYTE axis = state.Gamepad.bRightTrigger;
 
@@ -228,7 +228,7 @@ double Gamepad::RightTrigger()
 
 // Return gamepad state
 XINPUT_STATE
-Gamepad::GetState()
+Gamepad::getState()
 {
   XINPUT_STATE new_state;
 
