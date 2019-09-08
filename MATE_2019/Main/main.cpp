@@ -21,9 +21,9 @@ void sendData(string data)
   char* charArray = new char[data.size()];
   copy(data.begin(), data.end(), charArray);
 
-  arduino.writeSerialPort(charArray, data.size()-1);
-  Sleep(300);
-  arduino.readSerialPort(output, data.size()-1);
+  arduino.writeSerialPort(charArray, data.size() - 1);
+  Sleep(180);
+  arduino.readSerialPort(output, data.size() - 1);
 
   cout << ">>       " << output << endl << endl;
 
@@ -49,30 +49,37 @@ void drive()
 
   // Will not reach full power diagonally because of controller input (depending
   // on controller)
-  // Add imu/gyro input to rad45 if available for field orientation
+  // Add IMU input to rad45 if available for field orientation
   const double rad45 = 45.0 * 3.14159 / 180.0;
   double FR = (-STR * sin(rad45) + FWD * cos(rad45) + RCCW);
   double BR = (STR * cos(rad45) + FWD * sin(rad45) + RCCW);
   double BL = (-STR * sin(rad45) + FWD * cos(rad45) - RCCW);
   double FL = (STR * cos(rad45) + FWD * sin(rad45) - RCCW);
 
-  double* vals[] = {&FR, &BR, &BL, &FL};
+  double UL = gamepad.RightTrigger() - gamepad.LeftTrigger();
+  double UR = gamepad.RightTrigger() - gamepad.LeftTrigger();
+  double UB = gamepad.RightTrigger() - gamepad.LeftTrigger();
+
+  double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
   double max = 1.0;
 
   // Normalize the motor powers if calculation goes above 100%
-  for (double* num : vals)
+  // Ignores up/down motors
+  for (int i = 0; i < 4; ++i )
   {
-    if (abs(*num) > max)
+    if (abs(*vals[i]) > max)
     {
-      max = abs(*num);
+      max = abs(*vals[i]);
     }
   }
 
-  for (int i = 0; i <= 3; ++i)
+  for (int i = 0; i < 4; ++i)
   {
     *vals[i] /= max;
   }
+
+
 
   // Convert the values to something the motors can read
   for (double* num : vals)
