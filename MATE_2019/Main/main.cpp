@@ -79,14 +79,14 @@ void drive()
     *vals[i] /= max;
   }
 
-
-
   // Convert the values to something the motors can read
   for (double* num : vals)
   {
     *num = convertRange(-1.0, 1.0, 1100.0, 1900.0, *num);
     data.append(to_string((int)*num) + ";");
   }
+
+  data.pop_back();
   data.append("\n");
 
   if (gamepad.GetButtonDown(xButtons.A) || gamepad.GetButtonPressed(xButtons.B))
