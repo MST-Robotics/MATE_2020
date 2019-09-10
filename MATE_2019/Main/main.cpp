@@ -32,7 +32,7 @@ void transferData(string data)
   Sleep(110);
 
   // Expects IMU data foramatted like ":ABC;DEF;GHI"
-  arduino.readSerialPort(output, 12);
+  arduino.readSerialPort(output, MAX_DATA_LENGTH);
 
   // Add received section to previously recieved section
   for (char c : output)
@@ -59,7 +59,8 @@ void transferData(string data)
          << "Roll:    " << roll << endl
          << endl;
 
-    imu.erase(0, 11);
+	// Erase any backlog so latest data is read next
+    imu.clear();
   }
 }
 
