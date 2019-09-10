@@ -19,7 +19,7 @@ class SerialPort
   DWORD errors;
 
  public:
-  SerialPort(const char *portName);
+  SerialPort(const char *portName, const int baudRate);
   ~SerialPort();
 
   int readSerialPort(char *buffer, unsigned int buf_size);

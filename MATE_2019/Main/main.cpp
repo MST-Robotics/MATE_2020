@@ -3,29 +3,58 @@
 #include <string>
 
 #include ".\Headers\Gamepad.h"
+#include ".\Headers\PID.h"
 #include ".\Headers\SerialPort.h"
 
 using namespace std;
 
 char output[MAX_DATA_LENGTH];
-char incomingData[MAX_DATA_LENGTH];
+string imu;
+int yaw = 0;    // Heading left to right
+int pitch = 0;  // Heading up and down
+int roll = 0;   // Angle side to side relative to ground
 
 // Change the name of the port with the port name of your computer
 // Must remember that the backslashes are essential so do not remove them
 const char* port = "\\\\.\\COM7";
-SerialPort arduino(port);
+SerialPort arduino(port, 115200);
 Gamepad gamepad = Gamepad(1);
 
-void sendData(string data)
+void transferData(string data)
 {
   char* charArray = new char[data.size()];
   copy(data.begin(), data.end(), charArray);
 
   arduino.writeSerialPort(charArray, data.size() - 1);
-  Sleep(180);
-  arduino.readSerialPort(output, data.size() - 1);
+  Sleep(110);
 
-  cout << ">>       " << output << endl << endl;
+  // Expects IMU data foramatted like ":ABC;DEF;GHI"
+  arduino.readSerialPort(output, 12);
+
+  for (char c : output)
+  {
+    if (c)
+    {
+      imu += c;
+    }
+  }
+
+  imu.erase(0, imu.find(':'));
+
+  if (imu.size() >= 12)
+  {
+    yaw = stoi(imu.substr(1, 3));
+    pitch = stoi(imu.substr(5, 7));
+    roll = stoi(imu.substr(9, 11));
+
+    cout << ">>       " << imu << endl
+         << "Yaw:     " << yaw << endl
+         << "Pitch:   " << pitch << endl
+         << "Roll:    " << roll << endl
+         << endl;
+
+    imu.erase(0, 11);
+  }
 
   delete[] charArray;
 }
@@ -47,27 +76,36 @@ void drive()
   double STR = gamepad.leftStick_X();
   double RCCW = gamepad.rightStick_X();
 
+  PID pitchPID(0.01, 0.0, 0.0);
+  pitchPID.setContinuous(false);
+  pitchPID.setOutputLimits(-1.0, 1.0);
+  pitchPID.setSetpoint(0.0);
+
+  PID rollPID(0.01, 0.0, 0.0);
+  rollPID.setContinuous(false);
+  rollPID.setOutputLimits(-1.0, 1.0);
+  rollPID.setSetpoint(0.0);
+
   // Will not reach full power diagonally because of controller input (depending
   // on controller)
-  // Add IMU input to rad45 for field orientation
+  // rad45 adjusts where front is
   const double rad45 = 45.0 * 3.14159 / 180.0;
-  double FR = (-STR * sin(rad45) + FWD * cos(rad45) + RCCW);
-  double BR = (STR * cos(rad45) + FWD * sin(rad45) + RCCW);
-  double BL = (-STR * sin(rad45) + FWD * cos(rad45) - RCCW);
-  double FL = (STR * cos(rad45) + FWD * sin(rad45) - RCCW);
+  double heading = rad45 + yaw;
+  double FR = (-STR * sin(heading) + FWD * cos(heading) + RCCW);
+  double BR = (STR * cos(heading) + FWD * sin(heading) + RCCW);
+  double BL = (-STR * sin(heading) + FWD * cos(heading) - RCCW);
+  double FL = (STR * cos(heading) + FWD * sin(heading) - RCCW);
 
-  // Add IMU input here for tilt correction
-  double UL = gamepad.rightTrigger() - gamepad.leftTrigger();
-  double UR = gamepad.rightTrigger() - gamepad.leftTrigger();
-  double UB = gamepad.rightTrigger() - gamepad.leftTrigger();
+  double UL = gamepad.rightTrigger() - gamepad.leftTrigger() + pitchPID.getOutput() + rollPID.getOutput();
+  double UR = gamepad.rightTrigger() - gamepad.leftTrigger() + pitchPID.getOutput() - rollPID.getOutput();
+  double UB = gamepad.rightTrigger() - gamepad.leftTrigger() - pitchPID.getOutput();
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
   double max = 1.0;
 
-  // Normalize the motor powers if calculation goes above 100%
-  // Ignores up/down motors
-  for (int i = 0; i < 4; ++i )
+  // Normalize the horizontal motor powers if calculation goes above 100%
+  for (int i = 0; i < 4; ++i)
   {
     if (abs(*vals[i]) > max)
     {
@@ -76,6 +114,20 @@ void drive()
   }
 
   for (int i = 0; i < 4; ++i)
+  {
+    *vals[i] /= max;
+  }
+
+  // Normalize the vertical motor powers if calculation goes above 100%
+  for (int i = 5; i < 8; ++i)
+  {
+    if (abs(*vals[i]) > max)
+    {
+      max = abs(*vals[i]);
+    }
+  }
+
+  for (int i = 0; i < 3; ++i)
   {
     *vals[i] /= max;
   }
@@ -93,7 +145,7 @@ void drive()
   if (gamepad.getButtonDown(xButtons.A) || gamepad.getButtonPressed(xButtons.B))
   {
     cout << "Sending: " << data << endl;
-    sendData(data);
+    transferData(data);
   }
 }
 

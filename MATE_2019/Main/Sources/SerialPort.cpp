@@ -1,6 +1,6 @@
 #include "..\Headers\SerialPort.h"
 
-SerialPort::SerialPort(const char *portName)
+SerialPort::SerialPort(const char *portName, const int baudRate)
 {
   this->connected = false;
 
@@ -29,7 +29,7 @@ SerialPort::SerialPort(const char *portName)
     }
     else
     {
-      dcbSerialParameters.BaudRate = CBR_9600;
+      dcbSerialParameters.BaudRate = baudRate;
       dcbSerialParameters.ByteSize = 8;
       dcbSerialParameters.StopBits = ONESTOPBIT;
       dcbSerialParameters.Parity = NOPARITY;
@@ -72,11 +72,15 @@ int SerialPort::readSerialPort(char *buffer, unsigned int buf_size)
       toRead = buf_size;
     }
     else
+    {
       toRead = this->status.cbInQue;
+    }
   }
 
   if (ReadFile(this->handler, buffer, toRead, &bytesRead, NULL))
+  {
     return bytesRead;
+  }
 
   return 0;
 }
@@ -91,7 +95,9 @@ bool SerialPort::writeSerialPort(char *buffer, unsigned int buf_size)
     return false;
   }
   else
+  {
     return true;
+  }
 }
 
 bool SerialPort::isConnected() { return this->connected; }
