@@ -22,15 +22,19 @@ Gamepad gamepad = Gamepad(1);
 
 void transferData(string data)
 {
+  // Send motor commands to arduino
   char* charArray = new char[data.size()];
   copy(data.begin(), data.end(), charArray);
-
   arduino.writeSerialPort(charArray, data.size() - 1);
+  delete[] charArray;
+
+  // Wait for most of arduino message to come in through serial
   Sleep(110);
 
   // Expects IMU data foramatted like ":ABC;DEF;GHI"
   arduino.readSerialPort(output, 12);
 
+  // Add received section to previously recieved section
   for (char c : output)
   {
     if (c)
@@ -39,8 +43,10 @@ void transferData(string data)
     }
   }
 
+  // Remove any remanents of messages
   imu.erase(0, imu.find(':'));
 
+  // Only process when there is at least 1 full message
   if (imu.size() >= 12)
   {
     yaw = stoi(imu.substr(1, 3));
@@ -55,8 +61,6 @@ void transferData(string data)
 
     imu.erase(0, 11);
   }
-
-  delete[] charArray;
 }
 
 double convertRange(double oldMin, double oldMax, double newMin, double newMax,
@@ -96,9 +100,13 @@ void drive()
   double BL = (-STR * sin(heading) + FWD * cos(heading) - RCCW);
   double FL = (STR * cos(heading) + FWD * sin(heading) - RCCW);
 
-  double UL = gamepad.rightTrigger() - gamepad.leftTrigger() + pitchPID.getOutput() + rollPID.getOutput();
-  double UR = gamepad.rightTrigger() - gamepad.leftTrigger() + pitchPID.getOutput() - rollPID.getOutput();
-  double UB = gamepad.rightTrigger() - gamepad.leftTrigger() - pitchPID.getOutput();
+  // PID outputs may be backwards. Needs testing
+  double UL = gamepad.rightTrigger() - gamepad.leftTrigger() +
+              pitchPID.getOutput() + rollPID.getOutput();
+  double UR = gamepad.rightTrigger() - gamepad.leftTrigger() +
+              pitchPID.getOutput() - rollPID.getOutput();
+  double UB =
+      gamepad.rightTrigger() - gamepad.leftTrigger() - pitchPID.getOutput();
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
