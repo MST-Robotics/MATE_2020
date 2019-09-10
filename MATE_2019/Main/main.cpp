@@ -74,7 +74,8 @@ double convertRange(double oldMin, double oldMax, double newMin, double newMax,
 
 void drive()
 {
-  string data;
+	// : is verification character for arduino
+  string data = ":";
 
   double FWD = gamepad.leftStick_Y();
   double STR = gamepad.leftStick_X();
