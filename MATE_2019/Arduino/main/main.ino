@@ -1,3 +1,7 @@
+#include <LSM9DS1_Registers.h>
+#include <LSM9DS1_Types.h>
+#include <SparkFunLSM9DS1.h>
+
 #include <Servo.h>
 #include "pins.h"
 
@@ -10,19 +14,21 @@ Servo UL;
 Servo UR;
 Servo UB;
 
+const int COMMAND_SIZE = 36;
+
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.setTimeout(80);
   
-  FR.attach(0);
-  FL.attach(1);
-  BL.attach(2);
-  BR.attach(3);
+  FR.attach(2);
+  FL.attach(3);
+  BL.attach(4);
+  BR.attach(5);
 
-  UL.attach(4);
-  UR.attach(5);
-  UB.attach(6);
+  UL.attach(6);
+  UR.attach(7);
+  UB.attach(8);
 
   // 1500 is neutral
   FR.writeMicroseconds(1500);
@@ -36,15 +42,23 @@ void setup() {
 }
 
 void loop() {
-  char driveCommands[35];
-  // put your main code here, to run repeatedly:
-  if (Serial.available())
+  char driveCommands[COMMAND_SIZE];
+
+  // yaw, pitch, and roll = 3 digits
+  String pretendIMU = ":302;018;095";
+  writeString(pretendIMU);
+
+  // Wait untill there is at least 1 full command to read
+  if (Serial.available() >= COMMAND_SIZE-1)
+  {
+    // Don't read a string that starts in the middle of a command
+    if (Serial.read() == ':')
     {
-    String info = Serial.readStringUntil('\n');
-    Serial.flush();
-    writeString(info);
-    info.toCharArray(driveCommands, 35);
-    drive(driveCommands);
+      String info = Serial.readStringUntil('\n');
+      info.toCharArray(driveCommands, COMMAND_SIZE-1);
+      drive(driveCommands);
+      Serial.flush();
+    }
   }
 }
 
