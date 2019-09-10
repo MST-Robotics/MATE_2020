@@ -57,7 +57,14 @@ void loop() {
       String info = Serial.readStringUntil('\n');
       info.toCharArray(driveCommands, COMMAND_SIZE-1);
       drive(driveCommands);
+
+      // Clear any backlog commands
       Serial.flush();
+    }
+    else
+    {
+      // Clear invalid command
+      Serial.readStringUntil('\n');
     }
   }
 }
