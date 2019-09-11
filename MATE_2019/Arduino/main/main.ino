@@ -39,13 +39,18 @@ void setup() {
   UL.writeMicroseconds(1500);
   UR.writeMicroseconds(1500);
   UB.writeMicroseconds(1500);
+
+  randomSeed(analogRead(0));
 }
 
 void loop() {
   char driveCommands[COMMAND_SIZE];
 
-  // yaw, pitch, and roll = 3 digits
-  String pretendIMU = ":302;-118;-195|";
+  // Replace random with actual IMU data
+  String IMUString = ":";
+  IMUString = IMUString + (int) random(0, 360) + ";";
+  IMUString = IMUString + (int) random(-180, 180) + ";";
+  IMUString = IMUString + (int) random(-180, 180) + "|";
 
   // Wait untill there is at least 1 full command to read
   if (Serial.available() >= COMMAND_SIZE-1)
@@ -54,7 +59,7 @@ void loop() {
     if (Serial.read() == ':')
     {
       // Only send data back if data was received
-      writeString(pretendIMU);
+      writeString(IMUString);
       
       String info = Serial.readStringUntil('\n');
       info.toCharArray(driveCommands, COMMAND_SIZE-1);
