@@ -45,8 +45,7 @@ void loop() {
   char driveCommands[COMMAND_SIZE];
 
   // yaw, pitch, and roll = 3 digits
-  String pretendIMU = ":302;018;095|";
-  writeString(pretendIMU);
+  String pretendIMU = ":302;-118;-195|";
 
   // Wait untill there is at least 1 full command to read
   if (Serial.available() >= COMMAND_SIZE-1)
@@ -54,6 +53,9 @@ void loop() {
     // Don't read a string that starts in the middle of a command
     if (Serial.read() == ':')
     {
+      // Only send data back if data was received
+      writeString(pretendIMU);
+      
       String info = Serial.readStringUntil('\n');
       info.toCharArray(driveCommands, COMMAND_SIZE-1);
       drive(driveCommands);
