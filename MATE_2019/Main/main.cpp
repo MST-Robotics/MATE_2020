@@ -1,10 +1,9 @@
-#include <stdlib.h>
 #include <iostream>
-#include <string>
 
 #include ".\Headers\Gamepad.h"
 #include ".\Headers\PID.h"
 #include ".\Headers\SerialPort.h"
+#include ".\Headers\Utils.h"
 
 using namespace std;
 
@@ -19,34 +18,6 @@ int roll = 0;   // Angle side to side relative to ground
 const char* port = "\\\\.\\COM7";
 SerialPort arduino(port, 115200);
 Gamepad gamepad = Gamepad(1);
-
-double convertRange(double oldMin, double oldMax, double newMin, double newMax,
-                    double oldValue)
-{
-  double oldRange = (oldMax - oldMin);
-  double newRange = (newMax - newMin);
-
-  return (((oldValue - oldMin) * newRange) / oldRange) + newMin;
-}
-
-// Finds the Nth occurance of a string in another string and returns its position
-int findNth(const string& str, const string& findMe, int nth)
-{
-  size_t pos = -1;
-  int count = 0;
-
-  while (count != nth)
-  {
-    ++pos;
-    pos = str.find(findMe, pos);
-    if (pos == std::string::npos)
-    {
-      return -1;
-    }
-    ++count;
-  }
-  return pos;
-}
 
 void transferData(string data)
 {
@@ -76,22 +47,22 @@ void transferData(string data)
   imu.erase(0, imu.find(':'));
 
   // Only process when there is at least 1 maximum sized message
-   if (imu.size() >= 15)
-   {
-     yaw = stoi(imu.substr(1, findNth(imu, ";", 1) - 1));
-     pitch =
-         stoi(imu.substr(findNth(imu, ";", 1) + 1, findNth(imu, ";", 2) - 1));
-     roll = stoi(imu.substr(findNth(imu, ";", 2) + 1, imu.find('|')));
+  if (imu.size() >= 15)
+  {
+    yaw = stoi(imu.substr(1, Utils::findNth(imu, ";", 1) - 1));
+    pitch = stoi(imu.substr(Utils::findNth(imu, ";", 1) + 1,
+                            Utils::findNth(imu, ";", 2) - 1));
+    roll = stoi(imu.substr(Utils::findNth(imu, ";", 2) + 1, imu.find('|')));
 
-     cout << ">>       " << imu << endl
-          << "Yaw:     " << yaw << endl
-          << "Pitch:   " << pitch << endl
-          << "Roll:    " << roll << endl
-          << endl;
+    cout << ">>       " << imu << endl
+         << "Yaw:     " << yaw << endl
+         << "Pitch:   " << pitch << endl
+         << "Roll:    " << roll << endl
+         << endl;
 
-     // Erase any backlog so latest data is read next
-     imu.clear();
-   }
+    // Erase any backlog so latest data is read next
+    imu.clear();
+  }
 }
 
 void drive()
@@ -166,13 +137,14 @@ void drive()
   // Convert the values to something the motors can read
   for (double* num : vals)
   {
-    *num = convertRange(-1.0, 1.0, 1100.0, 1900.0, *num);
+    *num = Utils::convertRange(-1.0, 1.0, 1100.0, 1900.0, *num);
     data.append(to_string((int)*num) + ";");
   }
 
   data.pop_back();
   data.append("\n");
 
+  // These buttons are just for testing purposes
   if (gamepad.getButtonDown(xButtons.A) || gamepad.getButtonPressed(xButtons.B))
   {
     cout << "Sending: " << data << endl;
