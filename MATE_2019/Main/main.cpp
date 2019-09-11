@@ -29,10 +29,10 @@ double convertRange(double oldMin, double oldMax, double newMin, double newMax,
   return (((oldValue - oldMin) * newRange) / oldRange) + newMin;
 }
 
-// Finds the Nth occurance of a char in a string and returns its position
-int findNth(const string& str, const char& findMe, int nth)
+// Finds the Nth occurance of a string in another string and returns its position
+int findNth(const string& str, const string& findMe, int nth)
 {
-  size_t pos = 0;
+  size_t pos = -1;
   int count = 0;
 
   while (count != nth)
@@ -76,22 +76,22 @@ void transferData(string data)
   imu.erase(0, imu.find(':'));
 
   // Only process when there is at least 1 maximum sized message
-  if (imu.size() >= 15)
-  {
-    yaw = stoi(imu.substr(1, findNth(imu, ';', 1) - 1));
-    pitch =
-        stoi(imu.substr(findNth(imu, ';', 1) + 1, findNth(imu, ';', 2) - 1));
-    roll = stoi(imu.substr(findNth(imu, ';', 2) + 1, imu.find('|')));
+   if (imu.size() >= 15)
+   {
+     yaw = stoi(imu.substr(1, findNth(imu, ";", 1) - 1));
+     pitch =
+         stoi(imu.substr(findNth(imu, ";", 1) + 1, findNth(imu, ";", 2) - 1));
+     roll = stoi(imu.substr(findNth(imu, ";", 2) + 1, imu.find('|')));
 
-    cout << ">>       " << imu << endl
-         << "Yaw:     " << yaw << endl
-         << "Pitch:   " << pitch << endl
-         << "Roll:    " << roll << endl
-         << endl;
+     cout << ">>       " << imu << endl
+          << "Yaw:     " << yaw << endl
+          << "Pitch:   " << pitch << endl
+          << "Roll:    " << roll << endl
+          << endl;
 
-    // Erase any backlog so latest data is read next
-    imu.clear();
-  }
+     // Erase any backlog so latest data is read next
+     imu.clear();
+   }
 }
 
 void drive()
