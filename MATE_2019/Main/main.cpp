@@ -121,7 +121,7 @@ void drive()
   }
 
   // Normalize the vertical motor powers if calculation goes above 100%
-  for (int i = 5; i < 8; ++i)
+  for (int i = 4; i < 7; ++i)
   {
     if (abs(*vals[i]) > max)
     {
@@ -129,7 +129,7 @@ void drive()
     }
   }
 
-  for (int i = 0; i < 3; ++i)
+  for (int i = 4; i < 7; ++i)
   {
     *vals[i] /= max;
   }
