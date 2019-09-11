@@ -45,7 +45,7 @@ void loop() {
   char driveCommands[COMMAND_SIZE];
 
   // yaw, pitch, and roll = 3 digits
-  String pretendIMU = ":302;018;095";
+  String pretendIMU = ":302;018;095|";
   writeString(pretendIMU);
 
   // Wait untill there is at least 1 full command to read
