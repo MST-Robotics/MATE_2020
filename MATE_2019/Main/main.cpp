@@ -20,6 +20,34 @@ const char* port = "\\\\.\\COM7";
 SerialPort arduino(port, 115200);
 Gamepad gamepad = Gamepad(1);
 
+double convertRange(double oldMin, double oldMax, double newMin, double newMax,
+                    double oldValue)
+{
+  double oldRange = (oldMax - oldMin);
+  double newRange = (newMax - newMin);
+
+  return (((oldValue - oldMin) * newRange) / oldRange) + newMin;
+}
+
+// Finds the Nth occurance of a char in a string and returns its position
+int findNth(const string& str, const char& findMe, int nth)
+{
+  size_t pos = 0;
+  int count = 0;
+
+  while (count != nth)
+  {
+    ++pos;
+    pos = str.find(findMe, pos);
+    if (pos == std::string::npos)
+    {
+      return -1;
+    }
+    ++count;
+  }
+  return pos;
+}
+
 void transferData(string data)
 {
   // Send motor commands to arduino
@@ -29,9 +57,10 @@ void transferData(string data)
   delete[] charArray;
 
   // Wait for most of arduino message to come in through serial
+  // May be able to remove/shorten this after testing new verification code
   Sleep(110);
 
-  // Expects IMU data foramatted like ":ABC;DEF;GHI"
+  // Expects IMU data foramatted like ":X;Y;Z|", X,Y,Z are int
   arduino.readSerialPort(output, MAX_DATA_LENGTH);
 
   // Add received section to previously recieved section
@@ -46,12 +75,13 @@ void transferData(string data)
   // Remove any remanents of messages
   imu.erase(0, imu.find(':'));
 
-  // Only process when there is at least 1 full message
-  if (imu.size() >= 12)
+  // Only process when there is at least 1 maximum sized message
+  if (imu.size() >= 15)
   {
-    yaw = stoi(imu.substr(1, 3));
-    pitch = stoi(imu.substr(5, 7));
-    roll = stoi(imu.substr(9, 11));
+    yaw = stoi(imu.substr(1, findNth(imu, ';', 1) - 1));
+    pitch =
+        stoi(imu.substr(findNth(imu, ';', 1) + 1, findNth(imu, ';', 2) - 1));
+    roll = stoi(imu.substr(findNth(imu, ';', 2) + 1, imu.find('|')));
 
     cout << ">>       " << imu << endl
          << "Yaw:     " << yaw << endl
@@ -59,23 +89,14 @@ void transferData(string data)
          << "Roll:    " << roll << endl
          << endl;
 
-	// Erase any backlog so latest data is read next
+    // Erase any backlog so latest data is read next
     imu.clear();
   }
 }
 
-double convertRange(double oldMin, double oldMax, double newMin, double newMax,
-                    double oldValue)
-{
-  double oldRange = (oldMax - oldMin);
-  double newRange = (newMax - newMin);
-
-  return (((oldValue - oldMin) * newRange) / oldRange) + newMin;
-}
-
 void drive()
 {
-	// : is verification character for arduino
+  // : is verification character for arduino
   string data = ":";
 
   double FWD = gamepad.leftStick_Y();
