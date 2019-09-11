@@ -9,6 +9,7 @@ using namespace std;
 
 char output[MAX_DATA_LENGTH];
 string imu;
+string prevIMU;
 int yaw = 0;    // Heading left to right
 int pitch = 0;  // Heading up and down
 int roll = 0;   // Angle side to side relative to ground
@@ -28,8 +29,7 @@ void transferData(string data)
   delete[] charArray;
 
   // Wait for most of arduino message to come in through serial
-  // May be able to remove/shorten this after testing new verification code
-  Sleep(110);
+  Sleep(90);
 
   // Expects IMU data foramatted like ":X;Y;Z|", X,Y,Z are int
   arduino.readSerialPort(output, MAX_DATA_LENGTH);
@@ -43,26 +43,42 @@ void transferData(string data)
     }
   }
 
-  // Remove any remanents of messages
-  imu.erase(0, imu.find(':'));
-
-  // Only process when there is at least 1 maximum sized message
-  if (imu.size() >= 15)
+  // Make sure there is new data to process
+  if (imu.size() != prevIMU.size())
   {
-    yaw = stoi(imu.substr(1, Utils::findNth(imu, ";", 1) - 1));
-    pitch = stoi(imu.substr(Utils::findNth(imu, ";", 1) + 1,
-                            Utils::findNth(imu, ";", 2) - 1));
-    roll = stoi(imu.substr(Utils::findNth(imu, ";", 2) + 1, imu.find('|')));
+    // Remove any remanents of messages
+    imu.erase(0, imu.find(':'));
 
-    cout << ">>       " << imu << endl
-         << "Yaw:     " << yaw << endl
-         << "Pitch:   " << pitch << endl
-         << "Roll:    " << roll << endl
-         << endl;
+    // Only process when there is a message ending
+    if (imu.find("|"))
+    {
+      yaw = stoi(imu.substr(1, Utils::findNth(imu, ";", 1) - 1));
+      pitch = stoi(imu.substr(Utils::findNth(imu, ";", 1) + 1,
+                              Utils::findNth(imu, ";", 2) - 1));
+      roll = stoi(imu.substr(Utils::findNth(imu, ";", 2) + 1, imu.find('|')));
 
-    // Erase any backlog so latest data is read next
-    imu.clear();
+      cout << "\33[2K >>       " << imu << endl
+           << "\33[2K Yaw:     " << yaw << endl
+           << "\33[2K Pitch:   " << pitch << endl
+           << "\33[2K Roll:    " << roll << "\033[F\033[F\033[F\033[F\033[F\r";
+
+      // Erase any backlog so latest data is read next
+      for (int i = 0; i < imu.size(); ++i)
+      {
+        output[i] = '\0';
+      }
+      imu.clear();
+    }
+    else
+    {
+      cout << "Not Read:" << imu << endl;
+    }
   }
+  else
+  {
+    cout << "No new data" << endl;
+  }
+  prevIMU = imu;
 }
 
 void drive()
@@ -74,12 +90,12 @@ void drive()
   double STR = gamepad.leftStick_X();
   double RCCW = gamepad.rightStick_X();
 
-  PID pitchPID(0.01, 0.0, 0.0);
+  PID pitchPID(0.001, 0.0, 0.0);
   pitchPID.setContinuous(false);
   pitchPID.setOutputLimits(-1.0, 1.0);
   pitchPID.setSetpoint(0.0);
 
-  PID rollPID(0.01, 0.0, 0.0);
+  PID rollPID(0.001, 0.0, 0.0);
   rollPID.setContinuous(false);
   rollPID.setOutputLimits(-1.0, 1.0);
   rollPID.setSetpoint(0.0);
@@ -96,11 +112,11 @@ void drive()
 
   // PID outputs may be backwards. Needs testing
   double UL = gamepad.rightTrigger() - gamepad.leftTrigger() +
-              pitchPID.getOutput() + rollPID.getOutput();
+              pitchPID.getOutput(pitch) + rollPID.getOutput(roll);
   double UR = gamepad.rightTrigger() - gamepad.leftTrigger() +
-              pitchPID.getOutput() - rollPID.getOutput();
+              pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
   double UB =
-      gamepad.rightTrigger() - gamepad.leftTrigger() - pitchPID.getOutput();
+      gamepad.rightTrigger() - gamepad.leftTrigger() - pitchPID.getOutput(pitch);
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
