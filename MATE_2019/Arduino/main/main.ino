@@ -1,9 +1,17 @@
 #include <LSM9DS1_Registers.h>
 #include <LSM9DS1_Types.h>
+#include <Wire.h>
+#include <SPI.h>
 #include <SparkFunLSM9DS1.h>
 
 #include <Servo.h>
 #include "pins.h"
+
+#define LSM9DS1_M  0x1E // Would be 0x1C if SDO_M is LOW
+#define LSM9DS1_AG  0x6B // Would be 0x6A if SDO_AG is LOW
+#define DECLINATION -8.58
+
+LSM9DS1 imu;
 
 Servo FR;
 Servo FL;
@@ -20,6 +28,10 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   Serial.setTimeout(80);
+  
+  imu.settings.device.commInterface = IMU_MODE_I2C;
+  imu.settings.device.mAddress = LSM9DS1_M;
+  imu.settings.device.agAddress = LSM9DS1_AG;
   
   FR.attach(2);
   FL.attach(3);
@@ -40,17 +52,62 @@ void setup() {
   UR.writeMicroseconds(1500);
   UB.writeMicroseconds(1500);
 
-  randomSeed(analogRead(0));
+  if (!imu.begin())
+  {
+    while (1);
+  }
 }
 
 void loop() {
   char driveCommands[COMMAND_SIZE];
+  
+  if ( imu.gyroAvailable() )
+  {
+    // Updates gx, gy, and gz
+    imu.readGyro();
+  }
+  if ( imu.accelAvailable() )
+  {
+    // Updates ax, ay, and az
+    imu.readAccel();
+  }
+  if ( imu.magAvailable() )
+  {
+    // Updates mx, my, and mz
+    imu.readMag();
+  }
+
+  float ax = imu.ax;
+  float ay = imu.ay;
+  float az = imu.az;
+  float mx = -imu.mx;
+  float my = -imu.my;
+  float mz = imu.mz;
+
+  float roll = atan2(ay, az);
+  float pitch = atan2(-ax, sqrt(ay * ay + az * az));
+  
+  float heading;
+  if (my == 0)
+    heading = (mx < 0) ? PI : 0;
+  else
+    heading = atan2(mx, my);
+    
+  heading -= DECLINATION * PI / 180;
+  
+  if (heading > PI) heading -= (2 * PI);
+  else if (heading < -PI) heading += (2 * PI);
+  
+  // Convert everything from radians to degrees:
+  heading *= 180.0 / PI;
+  pitch *= 180.0 / PI;
+  roll  *= 180.0 / PI;
 
   // Replace random with actual IMU data
   String IMUString = ":";
-  IMUString = IMUString + (int) random(0, 360) + ";";
-  IMUString = IMUString + (int) random(-180, 180) + ";";
-  IMUString = IMUString + (int) random(-180, 180) + "|";
+  IMUString = IMUString + (int) heading + ";";
+  IMUString = IMUString + (int) pitch + ";";
+  IMUString = IMUString + (int) roll + "|";
 
   // Wait untill there is at least 1 full command to read
   if (Serial.available() >= COMMAND_SIZE-1)

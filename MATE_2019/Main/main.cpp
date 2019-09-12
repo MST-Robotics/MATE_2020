@@ -14,6 +14,8 @@ int yaw = 0;    // Heading left to right
 int pitch = 0;  // Heading up and down
 int roll = 0;   // Angle side to side relative to ground
 
+int yawOffset = 0;
+
 // Change the name of the port with the port name of your computer
 // Must remember that the backslashes are essential so do not remove them
 const char* port = "\\\\.\\COM7";
@@ -31,7 +33,7 @@ void transferData(string data)
   // Wait for most of arduino message to come in through serial
   Sleep(90);
 
-  // Expects IMU data foramatted like ":X;Y;Z|", X,Y,Z are int
+  // Expects IMU data foramatted like ":Yaw;Pitch;Roll|", all int
   arduino.readSerialPort(output, MAX_DATA_LENGTH);
 
   // Add received section to previously recieved section
@@ -104,7 +106,7 @@ void drive()
   // on controller)
   // rad45 adjusts where front is
   const double rad45 = 45.0 * 3.14159 / 180.0;
-  double heading = rad45 + yaw;
+  double heading = rad45 + yaw + yawOffset;
   double FR = (-STR * sin(heading) + FWD * cos(heading) + RCCW);
   double BR = (STR * cos(heading) + FWD * sin(heading) + RCCW);
   double BL = (-STR * sin(heading) + FWD * cos(heading) - RCCW);
@@ -115,8 +117,8 @@ void drive()
               pitchPID.getOutput(pitch) + rollPID.getOutput(roll);
   double UR = gamepad.rightTrigger() - gamepad.leftTrigger() +
               pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
-  double UB =
-      gamepad.rightTrigger() - gamepad.leftTrigger() - pitchPID.getOutput(pitch);
+  double UB = gamepad.rightTrigger() - gamepad.leftTrigger() -
+              pitchPID.getOutput(pitch);
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
@@ -160,12 +162,8 @@ void drive()
   data.pop_back();
   data.append("\n");
 
-  // These buttons are just for testing purposes
-  if (gamepad.getButtonDown(xButtons.A) || gamepad.getButtonPressed(xButtons.B))
-  {
-    cout << "Sending: " << data << endl;
-    transferData(data);
-  }
+  cout << "Sending: " << data << endl;
+  transferData(data);
 }
 
 int main()
@@ -191,6 +189,10 @@ int main()
   while (!gamepad.getButtonPressed(xButtons.Back))
   {
     gamepad.update();
+    if (gamepad.getButtonPressed(xButtons.A))
+    {
+      yawOffset = -yaw;
+	}
     drive();
     gamepad.refresh();
   }
