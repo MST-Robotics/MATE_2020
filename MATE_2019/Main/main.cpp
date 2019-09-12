@@ -7,6 +7,8 @@
 
 using namespace std;
 
+bool disabled = false;
+
 char output[MAX_DATA_LENGTH];
 string imu;
 string prevIMU;
@@ -18,7 +20,7 @@ int yawOffset = 0;
 
 // Change the name of the port with the port name of your computer
 // Must remember that the backslashes are essential so do not remove them
-const char* port = "\\\\.\\COM7";
+const char* port = "\\\\.\\COM8";
 SerialPort arduino(port, 115200);
 Gamepad gamepad = Gamepad(1);
 
@@ -90,14 +92,14 @@ void drive()
 
   double FWD = gamepad.leftStick_Y();
   double STR = gamepad.leftStick_X();
-  double RCCW = gamepad.rightStick_X();
+  double RCCW = -gamepad.rightStick_X();
 
-  PID pitchPID(0.001, 0.0, 0.0);
+  PID pitchPID(0.02, 0.0, 0.0);
   pitchPID.setContinuous(false);
   pitchPID.setOutputLimits(-1.0, 1.0);
   pitchPID.setSetpoint(0.0);
 
-  PID rollPID(0.001, 0.0, 0.0);
+  PID rollPID(0.02, 0.0, 0.0);
   rollPID.setContinuous(false);
   rollPID.setOutputLimits(-1.0, 1.0);
   rollPID.setSetpoint(0.0);
@@ -105,24 +107,39 @@ void drive()
   // Will not reach full power diagonally because of controller input (depending
   // on controller)
   // rad45 adjusts where front is
-  const double rad45 = 45.0 * 3.14159 / 180.0;
-  double heading = rad45;  //+ yaw + yawOffset; Put these back if yaw input starts working
-  double FR = (-STR * sin(heading) + FWD * cos(heading) + RCCW);
-  double BR = (STR * cos(heading) + FWD * sin(heading) + RCCW);
-  double BL = (-STR * sin(heading) + FWD * cos(heading) - RCCW);
-  double FL = (STR * cos(heading) + FWD * sin(heading) - RCCW);
+  const double rad45 = -45.0 * 3.14159 / 180.0;
+  double heading =
+      rad45;  //+ yaw + yawOffset; Put these back if yaw input starts working
+  double FR = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) + RCCW); // A
+  double BR = 0.0;  //(STR * cos(heading) + FWD * sin(heading) + RCCW); // B
+  double BL = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) - RCCW); // C
+  double FL = 0.0;  //(STR * cos(heading) + FWD * sin(heading) - RCCW);  // D
+
+  BL = (-STR * sin(heading) + FWD * cos(heading) + RCCW);
+  FR = (STR * cos(heading) + FWD * sin(heading) + RCCW);
+  FL = (-STR * sin(heading) + FWD * cos(heading) - RCCW);
+  BR = (STR * cos(heading) + FWD * sin(heading) - RCCW);
 
   // PID outputs may be backwards. Needs testing
-  double UL = gamepad.rightTrigger() - gamepad.leftTrigger() +
-              pitchPID.getOutput(pitch) + rollPID.getOutput(roll);
-  double UR = gamepad.rightTrigger() - gamepad.leftTrigger() +
+  double UL = gamepad.rightTrigger() - gamepad.leftTrigger() -
               pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
-  double UB = gamepad.rightTrigger() - gamepad.leftTrigger() -
+  double UR = gamepad.rightTrigger() - gamepad.leftTrigger() -
+              pitchPID.getOutput(pitch) + rollPID.getOutput(roll);
+  double UB = gamepad.rightTrigger() - gamepad.leftTrigger() +
               pitchPID.getOutput(pitch);
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
   double max = 1.0;
+
+  // Stop motors if disabled
+  if (disabled)
+  {
+    for (double* num : vals)
+    {
+      *num = 0.0;
+	}
+  }
 
   // Normalize the horizontal motor powers if calculation goes above 100%
   for (int i = 0; i < 4; ++i)
@@ -186,12 +203,17 @@ int main()
     cout << " Gamepad 1 NOT connected" << endl;
   }
 
-  while (!gamepad.getButtonPressed(xButtons.Back))
+  while (true)
   {
     gamepad.update();
     if (gamepad.getButtonPressed(xButtons.A))
     {
       yawOffset = -yaw;
+    }
+
+    if (gamepad.getButtonPressed(xButtons.Back))
+    {
+      disabled = !disabled;
     }
     drive();
     gamepad.refresh();
