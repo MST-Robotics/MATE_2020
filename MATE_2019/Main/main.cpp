@@ -106,7 +106,7 @@ void drive()
   // on controller)
   // rad45 adjusts where front is
   const double rad45 = 45.0 * 3.14159 / 180.0;
-  double heading = rad45 + yaw + yawOffset;
+  double heading = rad45;  //+ yaw + yawOffset; Put these back if yaw input starts working
   double FR = (-STR * sin(heading) + FWD * cos(heading) + RCCW);
   double BR = (STR * cos(heading) + FWD * sin(heading) + RCCW);
   double BL = (-STR * sin(heading) + FWD * cos(heading) - RCCW);
@@ -192,7 +192,7 @@ int main()
     if (gamepad.getButtonPressed(xButtons.A))
     {
       yawOffset = -yaw;
-	}
+    }
     drive();
     gamepad.refresh();
   }
