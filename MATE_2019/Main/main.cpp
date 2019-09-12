@@ -108,8 +108,8 @@ void drive()
   // on controller)
   // rad45 adjusts where front is
   const double rad45 = -45.0 * 3.14159 / 180.0;
-  double heading =
-      rad45;  //+ yaw + yawOffset; Put these back if yaw input starts working
+  // Put comment back if yaw input starts working
+  double heading = rad45;  //+ yaw + yawOffset;
   double FR = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) + RCCW); // A
   double BR = 0.0;  //(STR * cos(heading) + FWD * sin(heading) + RCCW); // B
   double BL = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) - RCCW); // C
@@ -138,7 +138,7 @@ void drive()
     for (double* num : vals)
     {
       *num = 0.0;
-	}
+    }
   }
 
   // Normalize the horizontal motor powers if calculation goes above 100%
