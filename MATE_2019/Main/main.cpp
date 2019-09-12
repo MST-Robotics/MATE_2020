@@ -120,7 +120,6 @@ void drive()
   FL = (-STR * sin(heading) + FWD * cos(heading) - RCCW);
   BR = (STR * cos(heading) + FWD * sin(heading) - RCCW);
 
-  // PID outputs may be backwards. Needs testing
   double UL = gamepad.rightTrigger() - gamepad.leftTrigger() -
               pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
   double UR = gamepad.rightTrigger() - gamepad.leftTrigger() -
@@ -167,6 +166,15 @@ void drive()
   for (int i = 4; i < 7; ++i)
   {
     *vals[i] /= max;
+  }
+
+  // Don't send command if it is below a certain threshold
+  for (double* num : vals)
+  {
+    if (abs(*num) < 0.1)
+    {
+      *num = 0.0;
+	}
   }
 
   // Convert the values to something the motors can read
