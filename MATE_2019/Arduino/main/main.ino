@@ -9,7 +9,6 @@
 
 #define LSM9DS1_M  0x1E // Would be 0x1C if SDO_M is LOW
 #define LSM9DS1_AG  0x6B // Would be 0x6A if SDO_AG is LOW
-#define DECLINATION -8.58
 
 LSM9DS1 imu;
 
@@ -22,7 +21,9 @@ Servo UL;
 Servo UR;
 Servo UB;
 
-const int COMMAND_SIZE = 36;
+const int claw = 12;
+
+const int COMMAND_SIZE = 37;
 
 void setup() {
   // put your setup code here, to run once:
@@ -41,6 +42,8 @@ void setup() {
   UL.attach(6);
   UR.attach(7);
   UB.attach(8);
+
+  pinMode(claw, OUTPUT);
 
   // 1500 is neutral
   FR.writeMicroseconds(1500);
@@ -61,51 +64,26 @@ void setup() {
 void loop() {
   char driveCommands[COMMAND_SIZE];
   
-  if ( imu.gyroAvailable() )
-  {
-    // Updates gx, gy, and gz
-    imu.readGyro();
-  }
-  if ( imu.accelAvailable() )
+  if (imu.accelAvailable())
   {
     // Updates ax, ay, and az
     imu.readAccel();
   }
-  if ( imu.magAvailable() )
+
+  if (imu.gyroAvailable())
   {
-    // Updates mx, my, and mz
-    imu.readMag();
+    // Updates gx, gy, and gz
+    imu.readGyro();
   }
 
   float ax = imu.ax;
   float ay = imu.ay;
   float az = imu.az;
-  float mx = -imu.mx;
-  float my = -imu.my;
-  float mz = imu.mz;
-
-  float roll = atan2(ay, az);
-  float pitch = atan2(-ax, sqrt(ay * ay + az * az));
   
-  float heading;
-  if (my == 0)
-    heading = (mx < 0) ? PI : 0;
-  else
-    heading = atan2(mx, my);
-    
-  heading -= DECLINATION * PI / 180;
+  float roll = atan2(ay, az) * 180 / PI;
+  float pitch = atan2(-ax, sqrt(ay * ay + az * az)) * 180 / PI;
   
-  if (heading > PI) heading -= (2 * PI);
-  else if (heading < -PI) heading += (2 * PI);
-  
-  // Convert everything from radians to degrees:
-  heading *= 180.0 / PI;
-  pitch *= 180.0 / PI;
-  roll  *= 180.0 / PI;
-
-  // Replace random with actual IMU data
   String IMUString = ":";
-  IMUString = IMUString + (int) heading + ";";
   IMUString = IMUString + (int) pitch + ";";
   IMUString = IMUString + (int) roll + "|";
 
@@ -163,6 +141,7 @@ void drive(char array[])
   setUR(atoi(commands[5]));
   setUB(atoi(commands[6]));
 
+  digitalWrite(claw, atoi(commands[7]));
 }
 
 void setFR(int num)
