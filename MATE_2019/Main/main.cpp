@@ -12,7 +12,6 @@ bool disabled = false;
 char output[MAX_DATA_LENGTH];
 string imu;
 string prevIMU;
-int yaw = 0;    // Heading left to right
 int pitch = 0;  // Heading up and down
 int roll = 0;   // Angle side to side relative to ground
 
@@ -56,13 +55,10 @@ void transferData(string data)
     // Only process when there is a message ending
     if (imu.find("|"))
     {
-      yaw = stoi(imu.substr(1, Utils::findNth(imu, ";", 1) - 1));
-      pitch = stoi(imu.substr(Utils::findNth(imu, ";", 1) + 1,
-                              Utils::findNth(imu, ";", 2) - 1));
+      pitch = stoi(imu.substr(1, Utils::findNth(imu, ";", 1) - 1));
       roll = stoi(imu.substr(Utils::findNth(imu, ";", 2) + 1, imu.find('|')));
 
       cout << "\33[2K >>       " << imu << endl
-           << "\33[2K Yaw:     " << yaw << endl
            << "\33[2K Pitch:   " << pitch << endl
            << "\33[2K Roll:    " << roll << "\033[F\033[F\033[F\033[F\033[F\r";
 
@@ -85,14 +81,14 @@ void transferData(string data)
   prevIMU = imu;
 }
 
-void drive()
+void teleop()
 {
   // : is verification character for arduino
   string data = ":";
 
   double FWD = gamepad.leftStick_Y();
   double STR = gamepad.leftStick_X();
-  double RCCW = -gamepad.rightStick_X();
+  double RCW = gamepad.rightStick_X();
 
   PID pitchPID(0.02, 0.0, 0.0);
   pitchPID.setContinuous(false);
@@ -107,18 +103,18 @@ void drive()
   // Will not reach full power diagonally because of controller input (depending
   // on controller)
   // rad45 adjusts where front is
-  const double rad45 = -45.0 * 3.14159 / 180.0;
-  // Put comment back if yaw input starts working
-  double heading = rad45;  //+ yaw + yawOffset;
+  const double rad45 = 45.0 * 3.14159 / 180.0;
+
+  double heading = -rad45;
   double FR = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) + RCCW); // A
   double BR = 0.0;  //(STR * cos(heading) + FWD * sin(heading) + RCCW); // B
   double BL = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) - RCCW); // C
   double FL = 0.0;  //(STR * cos(heading) + FWD * sin(heading) - RCCW);  // D
 
-  BL = (-STR * sin(heading) + FWD * cos(heading) + RCCW);
-  FR = (STR * cos(heading) + FWD * sin(heading) + RCCW);
-  FL = (-STR * sin(heading) + FWD * cos(heading) - RCCW);
-  BR = (STR * cos(heading) + FWD * sin(heading) - RCCW);
+  BL = (-STR * sin(heading) + FWD * cos(heading) - RCW);
+  FR = (STR * cos(heading) + FWD * sin(heading) - RCW);
+  FL = (-STR * sin(heading) + FWD * cos(heading) + RCW);
+  BR = (STR * cos(heading) + FWD * sin(heading) + RCW);
 
   double UL = gamepad.rightTrigger() - gamepad.leftTrigger() -
               pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
@@ -184,8 +180,8 @@ void drive()
     data.append(to_string((int)*num) + ";");
   }
 
-  data.pop_back();
-  data.append("\n");
+  // Claw command + end of command string character
+  data.append(to_string((int)gamepad.getButtonPressed(xButtons.A)) + "\n");
 
   cout << "Sending: " << data << endl;
   transferData(data);
@@ -214,16 +210,11 @@ int main()
   while (true)
   {
     gamepad.update();
-    if (gamepad.getButtonPressed(xButtons.A))
-    {
-      yawOffset = -yaw;
-    }
-
     if (gamepad.getButtonPressed(xButtons.Back))
     {
       disabled = !disabled;
     }
-    drive();
+    teleop();
     gamepad.refresh();
   }
 
