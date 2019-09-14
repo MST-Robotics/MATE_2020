@@ -116,11 +116,11 @@ void teleop()
   FL = (-STR * sin(heading) + FWD * cos(heading) + RCW);
   BR = (STR * cos(heading) + FWD * sin(heading) + RCW);
 
-  double UL = gamepad.rightTrigger() - gamepad.leftTrigger() -
+  double UL = gamepad.leftTrigger() - gamepad.rightTrigger() -
               pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
-  double UR = gamepad.rightTrigger() - gamepad.leftTrigger() -
+  double UR = gamepad.leftTrigger() - gamepad.rightTrigger() -
               pitchPID.getOutput(pitch) + rollPID.getOutput(roll);
-  double UB = gamepad.rightTrigger() - gamepad.leftTrigger() +
+  double UB = gamepad.leftTrigger() - gamepad.rightTrigger() +
               pitchPID.getOutput(pitch);
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
