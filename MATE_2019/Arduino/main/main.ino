@@ -24,11 +24,23 @@ Servo UB;
 const int claw = 12;
 
 const int COMMAND_SIZE = 37;
+const int MOTOR_NEUTRAL = 1500;
+
+int timer = 0;
 
 void setup() {
   // put your setup code here, to run once:
   Serial2.begin(115200);
   Serial2.setTimeout(80);
+
+  TCCR0A=(1<<WGM01);    //Set the CTC mode   
+  OCR0A=0xF9; //Value for ORC0A for 1ms 
+  
+  TIMSK0|=(1<<OCIE0A);   //Set the interrupt request
+  sei(); //Enable interrupt
+  
+  TCCR0B|=(1<<CS01);    //Set the prescale 1/64 clock
+  TCCR0B|=(1<<CS00);
   
   imu.settings.device.commInterface = IMU_MODE_I2C;
   imu.settings.device.mAddress = LSM9DS1_M;
@@ -45,15 +57,14 @@ void setup() {
 
   pinMode(claw, OUTPUT);
 
-  // 1500 is neutral
-  FR.writeMicroseconds(1500);
-  FL.writeMicroseconds(1500);
-  BL.writeMicroseconds(1500);
-  BR.writeMicroseconds(1500);
+  FR.writeMicroseconds(MOTOR_NEUTRAL);
+  FL.writeMicroseconds(MOTOR_NEUTRAL);
+  BL.writeMicroseconds(MOTOR_NEUTRAL);
+  BR.writeMicroseconds(MOTOR_NEUTRAL);
 
-  UL.writeMicroseconds(1500);
-  UR.writeMicroseconds(1500);
-  UB.writeMicroseconds(1500);
+  UL.writeMicroseconds(MOTOR_NEUTRAL);
+  UR.writeMicroseconds(MOTOR_NEUTRAL);
+  UB.writeMicroseconds(MOTOR_NEUTRAL);
 
   if (!imu.begin())
   {
@@ -90,6 +101,7 @@ void loop() {
   // Wait untill there is at least 1 full command to read
   if (Serial2.available() >= COMMAND_SIZE-1)
   {
+    timer = 0; // Reset timer if data received
     // Don't read a string that starts in the middle of a command
     if (Serial2.read() == ':')
     {
@@ -132,16 +144,36 @@ void drive(char array[])
       ptr = strtok(NULL, ";");
   }
 
-  setFR(atoi(commands[0]));
-  setFL(atoi(commands[3]));
-  setBL(atoi(commands[2]));
-  setBR(atoi(commands[1]));
-  
-  setUL(atoi(commands[4]));
-  setUR(atoi(commands[5]));
-  setUB(atoi(commands[6]));
+  // Only run if a command has been received within one second
+  if (timer < 1000)
+  {
+    writeCommands(atoi(commands[0]), atoi(commands[3]), atoi(commands[2]), atoi(commands[1]), 
+                  atoi(commands[4]), atoi(commands[5]), atoi(commands[6]), atoi(commands[7]));
+  }
+  else
+  {
+    writeCommands(MOTOR_NEUTRAL, MOTOR_NEUTRAL, MOTOR_NEUTRAL, MOTOR_NEUTRAL,
+                  MOTOR_NEUTRAL, MOTOR_NEUTRAL, MOTOR_NEUTRAL, atoi(commands[7]));
+  }
+}
 
-  digitalWrite(claw, atoi(commands[7]));
+void writeCommands(int FR, int FL, int BL, int BR, int UL, int UR, int UB, int c)
+{
+  setFR(FR);
+  setFL(FL);
+  setBL(BL);
+  setBR(BR);
+  
+  setUL(UL);
+  setUR(UR);
+  setUB(UB);
+
+  digitalWrite(claw, c);
+}
+
+ISR(TIMER0_COMPA_vect) // This is the interrupt request
+{
+  timer++;
 }
 
 void setFR(int num)
