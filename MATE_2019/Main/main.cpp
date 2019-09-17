@@ -90,10 +90,10 @@ void teleop()
   string data = ":";
 
   double FWD = gamepad.leftStick_Y();
-  double STR = gamepad.leftStick_X();
-  double RCW = gamepad.rightStick_X();
+  double RCW = gamepad.leftStick_X();
+  double STR = gamepad.rightStick_X();
 
-  PID pitchPID(0.01, 0.0, 0.0);
+  PID pitchPID(0.02, 0.0, 0.0);
   pitchPID.setContinuous(false);
   pitchPID.setOutputLimits(-1.0, 1.0);
   pitchPID.setSetpoint(0.0);
@@ -123,8 +123,8 @@ void teleop()
               pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
   double UR = gamepad.leftTrigger() - gamepad.rightTrigger() -
               pitchPID.getOutput(pitch) + rollPID.getOutput(roll);
-  double UB = gamepad.leftTrigger() - gamepad.rightTrigger() +
-              pitchPID.getOutput(pitch);
+  double UB = 0.4 * (gamepad.leftTrigger() - gamepad.rightTrigger() +
+              pitchPID.getOutput(pitch));
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
