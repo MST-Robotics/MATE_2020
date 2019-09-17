@@ -27,8 +27,8 @@ const int COMMAND_SIZE = 37;
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(115200);
-  Serial.setTimeout(80);
+  Serial2.begin(115200);
+  Serial2.setTimeout(80);
   
   imu.settings.device.commInterface = IMU_MODE_I2C;
   imu.settings.device.mAddress = LSM9DS1_M;
@@ -88,25 +88,25 @@ void loop() {
   IMUString = IMUString + (int) roll + "|";
 
   // Wait untill there is at least 1 full command to read
-  if (Serial.available() >= COMMAND_SIZE-1)
+  if (Serial2.available() >= COMMAND_SIZE-1)
   {
     // Don't read a string that starts in the middle of a command
-    if (Serial.read() == ':')
+    if (Serial2.read() == ':')
     {
       // Only send data back if data was received
       writeString(IMUString);
       
-      String info = Serial.readStringUntil('\n');
+      String info = Serial2.readStringUntil('\n');
       info.toCharArray(driveCommands, COMMAND_SIZE-1);
       drive(driveCommands);
 
       // Clear any backlog commands
-      Serial.flush();
+      Serial2.flush();
     }
     else
     {
       // Clear invalid command
-      Serial.readStringUntil('\n');
+      Serial2.readStringUntil('\n');
     }
   }
 }
@@ -115,7 +115,7 @@ void loop() {
 void writeString(String stringData) {
   for (int i = 0; i < stringData.length(); i++)
   {
-    Serial.write(stringData[i]);   // Push each char 1 by 1 on each loop pass
+    Serial2.write(stringData[i]);   // Push each char 1 by 1 on each loop pass
   }
 }
 
