@@ -55,8 +55,11 @@ void transferData(string data)
     // Only process when there is a message ending
     if (imu.find("|"))
     {
-      pitch = stoi(imu.substr(1, Utils::findNth(imu, ";", 1) - 1));
-      roll = stoi(imu.substr(Utils::findNth(imu, ";", 2) + 1, imu.find('|')));
+      cout << imu << endl
+		  << imu.substr(1, imu.find(";")) << endl
+           << imu.substr(imu.find(";") + 2, imu.find('|')) << endl;
+      pitch = stoi(imu.substr(1, imu.find(";")));
+      roll = stoi(imu.substr(imu.find(";") + 1, imu.find('|')));
 
       cout << "\33[2K >>       " << imu << endl
            << "\33[2K Pitch:   " << pitch << endl
@@ -76,7 +79,7 @@ void transferData(string data)
   }
   else
   {
-    cout << "No new data" << endl;
+    cout << "No new data: " << endl;
   }
   prevIMU = imu;
 }
@@ -90,12 +93,12 @@ void teleop()
   double STR = gamepad.leftStick_X();
   double RCW = gamepad.rightStick_X();
 
-  PID pitchPID(0.02, 0.0, 0.0);
+  PID pitchPID(0.01, 0.0, 0.0);
   pitchPID.setContinuous(false);
   pitchPID.setOutputLimits(-1.0, 1.0);
   pitchPID.setSetpoint(0.0);
 
-  PID rollPID(0.02, 0.0, 0.0);
+  PID rollPID(0.01, 0.0, 0.0);
   rollPID.setContinuous(false);
   rollPID.setOutputLimits(-1.0, 1.0);
   rollPID.setSetpoint(0.0);
@@ -106,15 +109,15 @@ void teleop()
   const double rad45 = 45.0 * 3.14159 / 180.0;
 
   double heading = -rad45;
-  double FR = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) + RCCW); // A
-  double BR = 0.0;  //(STR * cos(heading) + FWD * sin(heading) + RCCW); // B
-  double BL = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) - RCCW); // C
-  double FL = 0.0;  //(STR * cos(heading) + FWD * sin(heading) - RCCW);  // D
+  double FR = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) - RCW);  // A // BL
+  double BR = 0.0;  //(STR * cos(heading) + FWD * sin(heading) - RCW); // B   // FL
+  double BL = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) + RCW); // C  // FR
+  double FL = 0.0;  //(STR * cos(heading) + FWD * sin(heading) + RCW);  // D  // BR
 
-  BL = (-STR * sin(heading) + FWD * cos(heading) - RCW);
-  FR = (STR * cos(heading) + FWD * sin(heading) - RCW);
-  FL = (-STR * sin(heading) + FWD * cos(heading) + RCW);
-  BR = (STR * cos(heading) + FWD * sin(heading) + RCW);
+  BL = (-STR * sin(heading) + FWD * cos(heading) + RCW);
+  FL = (STR * cos(heading) + FWD * sin(heading) - RCW);
+  FR = (-STR * sin(heading) + FWD * cos(heading) + RCW);
+  BR = (STR * cos(heading) + FWD * sin(heading) - RCW);
 
   double UL = gamepad.leftTrigger() - gamepad.rightTrigger() -
               pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
@@ -170,7 +173,7 @@ void teleop()
     if (abs(*num) < 0.1)
     {
       *num = 0.0;
-	}
+    }
   }
 
   // Convert the values to something the motors can read
