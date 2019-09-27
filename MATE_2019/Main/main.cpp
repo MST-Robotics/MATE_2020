@@ -15,6 +15,9 @@ string prevIMU;
 int pitch = 0;  // Heading up and down
 int roll = 0;   // Angle side to side relative to ground
 
+double pitchSetpoint = 0.0;
+double rollSetpoint = 0.0;
+
 int yawOffset = 0;
 
 // Change the name of the port with the port name of your computer
@@ -56,7 +59,7 @@ void transferData(string data)
     if (imu.find("|"))
     {
       cout << imu << endl
-		  << imu.substr(1, imu.find(";")) << endl
+           << imu.substr(1, imu.find(";")) << endl
            << imu.substr(imu.find(";") + 2, imu.find('|')) << endl;
       pitch = stoi(imu.substr(1, imu.find(";")));
       roll = stoi(imu.substr(imu.find(";") + 1, imu.find('|')));
@@ -96,12 +99,31 @@ void teleop()
   PID pitchPID(0.02, 0.0, 0.0);
   pitchPID.setContinuous(false);
   pitchPID.setOutputLimits(-1.0, 1.0);
-  pitchPID.setSetpoint(0.0);
+  pitchPID.setSetpoint(pitchSetpoint);
 
   PID rollPID(0.01, 0.0, 0.0);
   rollPID.setContinuous(false);
   rollPID.setOutputLimits(-1.0, 1.0);
-  rollPID.setSetpoint(0.0);
+  rollPID.setSetpoint(rollSetpoint);
+
+  // Let driver adjust angle of robot if necessary
+  if (gamepad.getButtonPressed(xButtons.A))
+  {
+    pitchSetpoint += -0.01;
+  }
+  else if (gamepad.getButtonPressed(xButtons.Y))
+  {
+    pitchSetpoint += 0.01;
+  }
+
+  if (gamepad.getButtonPressed(xButtons.B))
+  {
+    rollSetpoint += -0.01;
+  }
+  else if (gamepad.getButtonPressed(xButtons.X))
+  {
+    rollSetpoint += 0.01;
+  }
 
   // Will not reach full power diagonally because of controller input (depending
   // on controller)
@@ -124,7 +146,7 @@ void teleop()
   double UR = gamepad.leftTrigger() - gamepad.rightTrigger() -
               pitchPID.getOutput(pitch) + rollPID.getOutput(roll);
   double UB = 0.4 * (gamepad.leftTrigger() - gamepad.rightTrigger() +
-              pitchPID.getOutput(pitch));
+                     pitchPID.getOutput(pitch));
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
