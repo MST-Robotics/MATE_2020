@@ -127,9 +127,9 @@ void teleop()
 
   // Will not reach full power diagonally because of controller input (depending
   // on controller)
-  // rad45 adjusts where front is
   const double rad45 = 45.0 * 3.14159 / 180.0;
 
+  // heading adjusts where front is
   double heading = -rad45;
   double FR = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) - RCW);  // A // BL
   double BR = 0.0;  //(STR * cos(heading) + FWD * sin(heading) - RCW); // B   // FL
@@ -235,9 +235,13 @@ int main()
   while (true)
   {
     gamepad.update();
-    if (gamepad.getButtonPressed(xButtons.Back))
+    if (gamepad.getButtonDown(xButtons.Back))
     {
-      disabled = !disabled;
+      disabled = true;
+    }
+    else if (gamepad.getButtonDown(xButtons.Start))
+    {
+      disabled = false;
     }
     teleop();
     gamepad.refresh();
