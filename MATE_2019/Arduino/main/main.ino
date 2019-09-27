@@ -111,10 +111,11 @@ void loop()
   // Wait untill there is at least 1 full command to read
   if (Serial.available() >= COMMAND_SIZE - 1)
   {
-    timer = 0;  // Reset timer if data received
     // Don't read a string that starts in the middle of a command
     if (Serial.read() == ':')
     {
+	  timer = 0;  // Reset timer if valid data received
+
       // Only send data back if data was received
       writeString(IMUString);
 
