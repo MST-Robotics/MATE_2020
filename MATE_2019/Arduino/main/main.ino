@@ -30,17 +30,17 @@ int timer = 0;
 void setup()
 {
   // put your setup code here, to run once:
-  Serial.begin(115200);
-  Serial.setTimeout(80);
+  Serial2.begin(115200);
+  Serial2.setTimeout(80);
 
   imu.settings.device.commInterface = IMU_MODE_I2C;
   imu.settings.device.mAddress = LSM9DS1_M;
   imu.settings.device.agAddress = LSM9DS1_AG;
 
-  FR.attach(2);
-  FL.attach(3);
-  BL.attach(4);
-  BR.attach(5);
+  FR.attach(5);
+  FL.attach(4);
+  BL.attach(2);
+  BR.attach(3);
 
   UL.attach(6);
   UR.attach(7);
@@ -109,10 +109,10 @@ void loop()
   writeString("\n");
 
   // Wait untill there is at least 1 full command to read
-  if (Serial.available() >= COMMAND_SIZE - 1)
+  if (Serial2.available() >= COMMAND_SIZE - 1)
   {
     // Don't read a string that starts in the middle of a command
-    if (Serial.read() == ':')
+    if (Serial2.read() == ':')
     {
 	  timer = 0;  // Reset timer if valid data received
 
@@ -124,12 +124,12 @@ void loop()
       drive(driveCommands);
 
       // Clear any backlog commands
-      Serial.flush();
+      Serial2.flush();
     }
     else
     {
       // Clear invalid command
-      Serial.readStringUntil('\n');
+      Serial2.readStringUntil('\n');
     }
   }
   //Rough timer counting
@@ -141,7 +141,7 @@ void writeString(String stringData)
 {
   for (unsigned int i = 0; i < stringData.length(); i++)
   {
-    Serial.write(stringData[i]);  // Push each char 1 by 1 on each loop pass
+    Serial2.write(stringData[i]);  // Push each char 1 by 1 on each loop pass
   }
 }
 
