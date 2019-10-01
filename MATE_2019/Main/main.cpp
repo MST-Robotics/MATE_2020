@@ -49,6 +49,8 @@ void transferData(string data)
     }
   }
 
+  cout << "Raw Input: " << imu << endl;
+
   // Make sure there is new data to process
   if (imu.size() != prevIMU.size())
   {
@@ -66,7 +68,8 @@ void transferData(string data)
 
       cout << "\33[2K >>       " << imu << endl
            << "\33[2K Pitch:   " << pitch << endl
-           << "\33[2K Roll:    " << roll << "\033[F\033[F\033[F\033[F\033[F\r";
+           << "\33[2K Roll:    " << roll
+           << "[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\r";
 
       // Erase any backlog so latest data is read next
       for (int i = 0; i < imu.size(); ++i)
@@ -82,7 +85,7 @@ void transferData(string data)
   }
   else
   {
-    cout << "No new data: " << endl;
+    cout << "\033[F\033[F\33[2KNo new data: \r";
   }
   prevIMU = imu;
 }
@@ -131,35 +134,22 @@ void teleop()
 
   // heading adjusts where front is
   double heading = -rad45;
-  double FR = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) - RCW);  // A // BL
-  double BR = 0.0;  //(STR * cos(heading) + FWD * sin(heading) - RCW); // B   // FL
-  double BL = 0.0;  //(-STR * sin(heading) + FWD * cos(heading) + RCW); // C  // FR
-  double FL = 0.0;  //(STR * cos(heading) + FWD * sin(heading) + RCW);  // D  // BR
+  double FR = -(-STR * sin(heading) + FWD * cos(heading) - RCW);  // A //Motor Inverted
+  double BR = -(STR * cos(heading) + FWD * sin(heading) - RCW);   // B  //Motor Inverted
+  double BL = (-STR * sin(heading) + FWD * cos(heading) + RCW);  // C 
+  double FL = (STR * cos(heading) + FWD * sin(heading) + RCW);   // D 
 
-  BL = (-STR * sin(heading) + FWD * cos(heading) + RCW);
-  FL = (STR * cos(heading) + FWD * sin(heading) - RCW);
-  FR = (-STR * sin(heading) + FWD * cos(heading) + RCW);
-  BR = (STR * cos(heading) + FWD * sin(heading) - RCW);
-
-  double UL = gamepad.leftTrigger() - gamepad.rightTrigger() -
+  double UL = gamepad.rightTrigger() - gamepad.leftTrigger() -
               pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
-  double UR = gamepad.leftTrigger() - gamepad.rightTrigger() -
+  double UR = gamepad.rightTrigger() - gamepad.leftTrigger() -
               pitchPID.getOutput(pitch) + rollPID.getOutput(roll);
-  double UB = 0.4 * (gamepad.leftTrigger() - gamepad.rightTrigger() +
-                     pitchPID.getOutput(pitch));
+  double UB = (gamepad.rightTrigger() - gamepad.leftTrigger() +
+               pitchPID.getOutput(pitch)) *
+              0.4;
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
   double max = 1.0;
-
-  // Stop motors if disabled
-  if (disabled)
-  {
-    for (double* num : vals)
-    {
-      *num = 0.0;
-    }
-  }
 
   // Normalize the horizontal motor powers if calculation goes above 100%
   for (int i = 0; i < 4; ++i)
@@ -190,9 +180,10 @@ void teleop()
   }
 
   // Don't send command if it is below a certain threshold
+  // Or the robot is disabled
   for (double* num : vals)
   {
-    if (abs(*num) < 0.1)
+    if (abs(*num) < 0.1 || disabled)
     {
       *num = 0.0;
     }
