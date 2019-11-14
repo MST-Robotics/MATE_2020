@@ -22,9 +22,10 @@ int yawOffset = 0;
 
 // Change the name of the port with the port name of your computer
 // Must remember that the backslashes are essential so do not remove them
-const char* port = "\\\\.\\COM8";
+const char* port = "\\\\.\\COM3";
 SerialPort arduino(port, 115200);
-Gamepad gamepad = Gamepad(1);
+Gamepad gamepad1 = Gamepad(1);
+Gamepad gamepad2 = Gamepad(2);
 
 void transferData(string data)
 {
@@ -49,7 +50,7 @@ void transferData(string data)
     }
   }
 
-  cout << "Raw Input: " << imu << endl;
+  cout << "\33[2K Raw Input: " << imu << endl;
 
   // Make sure there is new data to process
   if (imu.size() != prevIMU.size())
@@ -60,16 +61,17 @@ void transferData(string data)
     // Only process when there is a message ending
     if (imu.find("|"))
     {
-      cout << imu << endl
-           << imu.substr(1, imu.find(";")) << endl
-           << imu.substr(imu.find(";") + 2, imu.find('|')) << endl;
+      cout << "\33[2K" << imu << endl
+           << "\33[2K" << imu.substr(1, imu.find(";")) << endl
+           << "\33[2K" << imu.substr(imu.find(";") + 2, imu.find('|')) << endl;
       pitch = stoi(imu.substr(1, imu.find(";")));
       roll = stoi(imu.substr(imu.find(";") + 1, imu.find('|')));
 
       cout << "\33[2K >>       " << imu << endl
            << "\33[2K Pitch:   " << pitch << endl
            << "\33[2K Roll:    " << roll
-           << "[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\r";
+           << "[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033["
+              "F\033[F\033[F\r\33[2K";
 
       // Erase any backlog so latest data is read next
       for (int i = 0; i < imu.size(); ++i)
@@ -85,45 +87,42 @@ void transferData(string data)
   }
   else
   {
-    cout << "\033[F\033[F\33[2KNo new data: \r";
+    cout << "\033[F\033[F\33[2K     No new data: \r";
   }
   prevIMU = imu;
 }
 
-void teleop()
+// TODO split out drive and arm to their own files
+void teleop(double FWD, double STR, double RCW)
 {
   // : is verification character for arduino
   string data = ":";
 
-  double FWD = gamepad.leftStick_Y();
-  double RCW = gamepad.leftStick_X();
-  double STR = gamepad.rightStick_X();
-
-  PID pitchPID(0.02, 0.0, 0.0);
+  PID pitchPID(0.007, 0.0, 0.0);
   pitchPID.setContinuous(false);
   pitchPID.setOutputLimits(-1.0, 1.0);
   pitchPID.setSetpoint(pitchSetpoint);
 
-  PID rollPID(0.01, 0.0, 0.0);
+  PID rollPID(0.007, 0.0, 0.0);
   rollPID.setContinuous(false);
   rollPID.setOutputLimits(-1.0, 1.0);
   rollPID.setSetpoint(rollSetpoint);
 
   // Let driver adjust angle of robot if necessary
-  if (gamepad.getButtonPressed(xButtons.A))
+  if (gamepad1.getButtonPressed(xButtons.A))
   {
     pitchSetpoint += -0.01;
   }
-  else if (gamepad.getButtonPressed(xButtons.Y))
+  else if (gamepad1.getButtonPressed(xButtons.Y))
   {
     pitchSetpoint += 0.01;
   }
 
-  if (gamepad.getButtonPressed(xButtons.B))
+  if (gamepad1.getButtonPressed(xButtons.B))
   {
     rollSetpoint += -0.01;
   }
-  else if (gamepad.getButtonPressed(xButtons.X))
+  else if (gamepad1.getButtonPressed(xButtons.X))
   {
     rollSetpoint += 0.01;
   }
@@ -134,17 +133,18 @@ void teleop()
 
   // heading adjusts where front is
   double heading = -rad45;
-  double FR = -(-STR * sin(heading) + FWD * cos(heading) - RCW);  // A //Motor Inverted
-  double BR = -(STR * cos(heading) + FWD * sin(heading) - RCW);   // B  //Motor Inverted
-  double BL = (-STR * sin(heading) + FWD * cos(heading) + RCW);  // C 
-  double FL = (STR * cos(heading) + FWD * sin(heading) + RCW);   // D 
+  double FR = -(-STR * sin(heading) + FWD * cos(heading) - RCW);  // A
+  double BR = (STR * cos(heading) + FWD * sin(heading) - RCW);    // B
+  double BL = -(-STR * sin(heading) + FWD * cos(heading) + RCW);  // C
+  double FL = (STR * cos(heading) + FWD * sin(heading) + RCW);    // D
 
-  double UL = gamepad.rightTrigger() - gamepad.leftTrigger() -
-              pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
-  double UR = gamepad.rightTrigger() - gamepad.leftTrigger() -
-              pitchPID.getOutput(pitch) + rollPID.getOutput(roll);
-  double UB = (gamepad.rightTrigger() - gamepad.leftTrigger() +
-               pitchPID.getOutput(pitch)) *
+  double UL = gamepad1.rightTrigger() * 0.6 - gamepad1.leftTrigger() * 1.4 -
+              pitchPID.getOutput(pitch) - rollPID.getOutput(roll) + 0.45;
+  double UR = gamepad1.rightTrigger() - gamepad1.leftTrigger() -
+              pitchPID.getOutput(pitch) * 0.6 + rollPID.getOutput(roll) * 1.4 +
+              0.45;
+  double UB = (gamepad1.rightTrigger() - gamepad1.leftTrigger() +
+               pitchPID.getOutput(pitch) + 0.45) *
               0.4;
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
@@ -196,10 +196,25 @@ void teleop()
     data.append(to_string((int)*num) + ";");
   }
 
-  // Claw command + end of command string character
-  data.append(to_string((int)gamepad.getButtonPressed(xButtons.A)) + "\n");
+  double shoulder = 0.0;
+  double wristTilt = 0.0;
+  double wristTwist = 0.0;
 
-  cout << "Sending: " << data << endl;
+  shoulder += gamepad2.leftStick_Y() * 0.05;
+  wristTilt += gamepad2.rightStick_Y() * 0.05;
+  wristTwist += gamepad2.rightStick_X() * 0.5;
+  double* armVals[] = {&shoulder, &wristTilt, &wristTwist};
+
+  for (double* num : armVals)
+  {
+    *num = Utils::convertRange(-1.0, 1.0, 1100.0, 1900.0, *num);
+    data.append(to_string((int)*num) + ";");
+  }
+
+  // Claw command + end of command string character
+  data.append(to_string((int)gamepad1.getButtonPressed(xButtons.A)) + "\n");
+
+  cout << "[F\033[F\033\33[2K Sending: " << data << endl;
   transferData(data);
 }
 
@@ -214,7 +229,7 @@ int main()
     cout << " Error in Arduino port name" << endl << endl;
   }
 
-  if (gamepad.connected())
+  if (gamepad1.connected())
   {
     cout << " Gamepad 1 connected" << endl;
   }
@@ -225,17 +240,20 @@ int main()
 
   while (true)
   {
-    gamepad.update();
-    if (gamepad.getButtonDown(xButtons.Back))
+    gamepad1.update();
+    gamepad2.update();
+    if (gamepad1.getButtonPressed(xButtons.Back) || !gamepad1.connected())
     {
       disabled = true;
     }
-    else if (gamepad.getButtonDown(xButtons.Start))
+    else if (gamepad1.getButtonPressed(xButtons.Start) && gamepad1.connected())
     {
       disabled = false;
     }
-    teleop();
-    gamepad.refresh();
+    teleop(-gamepad1.rightStick_X(), -gamepad1.leftStick_Y(),
+           -gamepad1.leftStick_X());
+    gamepad1.refresh();
+    gamepad2.refresh();
   }
 
   cout << " Exiting" << endl;
