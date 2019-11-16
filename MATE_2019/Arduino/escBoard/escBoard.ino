@@ -14,7 +14,7 @@ int commandM1 = MOTOR_NEUTRAL;
   
 void setup() 
 {
-  Wire.begin(11);
+  Wire.begin(10);
   Wire.onReceive(receiveEvent);
 
   pinMode(PD3, OUTPUT); //STAT0
