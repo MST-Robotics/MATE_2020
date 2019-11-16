@@ -27,6 +27,9 @@ Servo wristTilt;
 Servo wristTwist;
 
 const int buzzer = 17;
+const int water1 = 20;
+const int water2 = 21;
+const int water3 = 22;
 const int water4 = 23;
 
 const int COMMAND_SIZE = 52;
@@ -122,7 +125,7 @@ void loop()
 	    timer = 0;  // Reset timer if valid data received
 
       // Only send data back if data was received
-      if (digitalRead(water4))
+      if (digitalRead(water4) && digitalRead(water3) && digitalRead(water2) && digitalRead(water1))
       {
         writeString("0");
       }
@@ -131,7 +134,7 @@ void loop()
         writeString("1");
       }
 
-      String info = Serial.readStringUntil('\n');
+      String info = Serial1.readStringUntil('\n');
       info.toCharArray(driveCommands, COMMAND_SIZE - 1);
       drive(driveCommands);
 
