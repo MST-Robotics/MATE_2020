@@ -8,6 +8,7 @@
 using namespace std;
 
 bool disabled = false;
+bool waterLeak = false;
 
 char output[MAX_DATA_LENGTH];
 string imu;
@@ -35,61 +36,27 @@ void transferData(string data)
   arduino.writeSerialPort(charArray, data.size() - 1);
   delete[] charArray;
 
-  // Wait for most of arduino message to come in through serial
+  // Wait for arduino to process command
   Sleep(90);
 
-  // Expects IMU data foramatted like ":Yaw;Pitch;Roll|", all int
+  // Expects 0 or 1, if water has been detected
   arduino.readSerialPort(output, MAX_DATA_LENGTH);
 
-  // Add received section to previously recieved section
   for (char c : output)
   {
-    if (c)
+    if (c == '1')
     {
-      imu += c;
+      waterLeak = true;
     }
   }
 
-  cout << "\33[2K Raw Input: " << imu << endl;
-
-  // Make sure there is new data to process
-  if (imu.size() != prevIMU.size())
+  if (waterLeak)
   {
-    // Remove any remanents of messages
-    imu.erase(0, imu.find(':'));
-
-    // Only process when there is a message ending
-    if (imu.find("|"))
+    for (int i = 0; i < 50; ++i)
     {
-      cout << "\33[2K" << imu << endl
-           << "\33[2K" << imu.substr(1, imu.find(";")) << endl
-           << "\33[2K" << imu.substr(imu.find(";") + 2, imu.find('|')) << endl;
-      pitch = stoi(imu.substr(1, imu.find(";")));
-      roll = stoi(imu.substr(imu.find(";") + 1, imu.find('|')));
-
-      cout << "\33[2K >>       " << imu << endl
-           << "\33[2K Pitch:   " << pitch << endl
-           << "\33[2K Roll:    " << roll
-           << "[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033[F\033["
-              "F\033[F\033[F\r\33[2K";
-
-      // Erase any backlog so latest data is read next
-      for (int i = 0; i < imu.size(); ++i)
-      {
-        output[i] = '\0';
-      }
-      imu.clear();
-    }
-    else
-    {
-      cout << "Not Read:" << imu << endl;
+      cout << "WATER ";
     }
   }
-  else
-  {
-    cout << "\033[F\033[F\33[2K     No new data: \r";
-  }
-  prevIMU = imu;
 }
 
 // TODO split out drive and arm to their own files
@@ -214,7 +181,7 @@ void teleop(double FWD, double STR, double RCW)
   // Claw command + end of command string character
   data.append(to_string((int)gamepad1.getButtonPressed(xButtons.A)) + "\n");
 
-  cout << "[F\033[F\033\33[2K Sending: " << data << endl;
+  cout << " Sending: " << data << endl;
   transferData(data);
 }
 

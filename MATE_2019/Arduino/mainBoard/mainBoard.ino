@@ -27,6 +27,7 @@ Servo wristTilt;
 Servo wristTwist;
 
 const int buzzer = 17;
+const int water4 = 23;
 
 const int COMMAND_SIZE = 52;
 const int MOTOR_NEUTRAL = 1500;
@@ -38,8 +39,8 @@ String disabledCommand = ":1500;1500;1500;1500;1500;1500;1500;1500;1500;1500;0";
 void setup()
 {
   Wire.begin();
-  Serial.begin(115200);
-  Serial.setTimeout(80);
+  Serial1.begin(115200);
+  Serial1.setTimeout(80);
 
   imu.settings.device.commInterface = IMU_MODE_I2C;
   imu.settings.device.mAddress = LSM9DS1_M;
@@ -59,6 +60,7 @@ void setup()
 //  wristTwist.attach(11);
 
   pinMode(buzzer, OUTPUT);
+  pinMode(water4, INPUT);
 
   FR.writeMicroseconds(MOTOR_NEUTRAL);
   BR.writeMicroseconds(MOTOR_NEUTRAL);
@@ -68,13 +70,16 @@ void setup()
   UL.writeMicroseconds(MOTOR_NEUTRAL);
   UR.writeMicroseconds(MOTOR_NEUTRAL);
   UB.writeMicroseconds(MOTOR_NEUTRAL);
-  //If the IMU doesn't connect in ~10 seconds, start driving without it
-  //while (!imu.begin() && timer < 10000)
+
+  // Scream untill IMU connected
+  digitalWrite(buzzer, 1);
+  if (!imu.begin())
   {
-    ++timer;
-    delay(1);
+    while(1)
+    {
+    }
   }
-  
+  digitalWrite(buzzer, 0);
 }
 
 void loop()
@@ -87,13 +92,13 @@ void loop()
   float ay = 0.0;
   float az = 0.0;
 
-  //if (imu.accelAvailable())
+  if (imu.accelAvailable())
   {
     // Updates ax, ay, and az
-    //imu.readAccel();
-    //ax = imu.ax;
-    //ay = imu.ay;
-    //az = imu.az;
+    imu.readAccel();
+    ax = imu.ax;
+    ay = imu.ay;
+    az = imu.az;
   }
 
   //if (imu.gyroAvailable())
@@ -105,23 +110,26 @@ void loop()
   float roll = atan2(ay, az) * 180 / PI;
   float pitch = atan2(-ax, sqrt(ay * ay + az * az)) * 180 / PI;
 
-  String IMUString = ":";
-  IMUString = IMUString + (int)pitch + ";";
-  IMUString = IMUString + (int)roll + "|";
-
   char cstr[16];
   itoa(timer, cstr, 10);
 
   // Wait untill there is at least 1 full command to read
-  if (Serial.available() >= COMMAND_SIZE - 1)
+  if (Serial1.available() >= COMMAND_SIZE - 1)
   {
     // Don't read a string that starts in the middle of a command
-    if (Serial.read() == ':')
+    if (Serial1.read() == ':')
     {
 	    timer = 0;  // Reset timer if valid data received
 
       // Only send data back if data was received
-      writeString(IMUString);
+      if (digitalRead(water4))
+      {
+        writeString("0");
+      }
+      else
+      {
+        writeString("1");
+      }
 
       String info = Serial.readStringUntil('\n');
       info.toCharArray(driveCommands, COMMAND_SIZE - 1);
@@ -130,12 +138,12 @@ void loop()
       digitalWrite(buzzer, 1);
 
       // Clear any backlog commands
-      Serial.flush();
+      Serial1.flush();
     }
     else
     {
       // Clear invalid command
-      Serial.readStringUntil('\n');
+      Serial1.readStringUntil('\n');
     }
   }
   
@@ -143,7 +151,7 @@ void loop()
   if (timer > 250)
   {
     disabledCommand.toCharArray(driveCommands, COMMAND_SIZE - 1); 
-    //drive(driveCommands);
+    drive(driveCommands);
   }
   //Rough timer counting
   delay(1);
@@ -155,7 +163,7 @@ void writeString(String stringData)
 {
   for (unsigned int i = 0; i < stringData.length(); i++)
   {
-    Serial.write(stringData[i]);  // Push each char 1 by 1 on each loop pass
+    Serial1.write(stringData[i]);  // Push each char 1 by 1 on each loop pass
   }
 }
 
