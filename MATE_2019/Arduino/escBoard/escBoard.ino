@@ -61,7 +61,7 @@ void receiveEvent(int howMany)
     }
   
     commandM0 = atoi(command1);
-    commandM1 = atoi(command1);
+    commandM1 = atoi(command2);
     digitalWrite(PD3, 0);
   }
   
