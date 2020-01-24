@@ -11,6 +11,8 @@
 #define LSM9DS1_M 0x1E   // Would be 0x1C if SDO_M is LOW
 #define LSM9DS1_AG 0x6B  // Would be 0x6A if SDO_AG is LOW
 
+#define SerialConnection Serial1
+
 LSM9DS1 imu;
 
 Servo FR;
@@ -41,9 +43,12 @@ String disabledCommand = ":1500;1500;1500;1500;1500;1500;1500;1500;1500;1500;0";
 
 void setup()
 {
+  
+  delay(10000); 
+
   Wire.begin();
-  Serial1.begin(115200);
-  Serial1.setTimeout(80);
+  SerialConnection.begin(115200);
+  SerialConnection.setTimeout(80);
 
   imu.settings.device.commInterface = IMU_MODE_I2C;
   imu.settings.device.mAddress = LSM9DS1_M;
@@ -65,28 +70,53 @@ void setup()
   pinMode(buzzer, OUTPUT);
   pinMode(water4, INPUT);
 
-  FR.writeMicroseconds(MOTOR_NEUTRAL);
-  BR.writeMicroseconds(MOTOR_NEUTRAL);
-  BL.writeMicroseconds(MOTOR_NEUTRAL);
-  FL.writeMicroseconds(MOTOR_NEUTRAL);
-
-  UL.writeMicroseconds(MOTOR_NEUTRAL);
-  UR.writeMicroseconds(MOTOR_NEUTRAL);
-  UB.writeMicroseconds(MOTOR_NEUTRAL);
-
   // Scream untill IMU connected
   digitalWrite(buzzer, 1);
-  if (!imu.begin())
+
+  while (!imu.begin())
   {
-    while(1)
-    {
-    }
+    delay(500);
   }
+
   digitalWrite(buzzer, 0);
 }
 
 void loop()
 {
+  static bool wireInit = false;
+  while (!wireInit)
+  {
+    Wire.beginTransmission(14);
+    Wire.write("1500");
+    Wire.write("1500");
+    Wire.write(':');
+    Wire.endTransmission();
+  
+    Wire.beginTransmission(11);
+    Wire.write("1500");
+    Wire.write("1500");
+    Wire.write(':');
+    Wire.endTransmission();
+  
+    Wire.beginTransmission(12);
+    Wire.write("1500");
+    Wire.write("1500");
+    Wire.write(':');
+    Wire.endTransmission();
+  
+    Wire.beginTransmission(13);
+    Wire.write("1500");
+    Wire.write("1500");
+    Wire.write(':');
+    Wire.endTransmission();
+    delay(90);
+    ++timer;
+
+    if (timer > 75)
+    {
+      wireInit = true;
+    }
+  }
   char driveCommands[COMMAND_SIZE];
 
   ++timer;
@@ -117,10 +147,10 @@ void loop()
   itoa(timer, cstr, 10);
 
   // Wait untill there is at least 1 full command to read
-  if (Serial1.available() >= COMMAND_SIZE - 1)
+  if (SerialConnection.available() >= COMMAND_SIZE - 1)
   {
     // Don't read a string that starts in the middle of a command
-    if (Serial1.read() == ':')
+    if (SerialConnection.read() == ':')
     {
 	    timer = 0;  // Reset timer if valid data received
 
@@ -134,19 +164,19 @@ void loop()
         writeString("1");
       }
 
-      String info = Serial1.readStringUntil('\n');
+      String info = SerialConnection.readStringUntil('\n');
       info.toCharArray(driveCommands, COMMAND_SIZE - 1);
       drive(driveCommands);
 
       digitalWrite(buzzer, 1);
 
       // Clear any backlog commands
-      Serial1.flush();
+      SerialConnection.flush();
     }
     else
     {
       // Clear invalid command
-      Serial1.readStringUntil('\n');
+      SerialConnection.readStringUntil('\n');
     }
   }
   
@@ -166,7 +196,7 @@ void writeString(String stringData)
 {
   for (unsigned int i = 0; i < stringData.length(); i++)
   {
-    Serial1.write(stringData[i]);  // Push each char 1 by 1 on each loop pass
+    SerialConnection.write(stringData[i]);  // Push each char 1 by 1 on each loop pass
   }
 }
 
@@ -182,16 +212,18 @@ void drive(char array[])
     index++;
     ptr = strtok(NULL, ";");
   }
-
-  Wire.beginTransmission(10);
-  Wire.write(commands[0]);
-  Wire.write(commands[3]);
-  Wire.write(':');
-  Wire.endTransmission();
-
+  
   Wire.beginTransmission(11);
   Wire.write(commands[2]);
   Wire.write(commands[1]);
+  Wire.write(':');
+  Wire.endTransmission();
+
+  Wire.beginTransmission(14);
+  Wire.write(commands[2]);
+  Wire.write(commands[1]);
+  //Wire.write(commands[0]);
+  //Wire.write(commands[3]);
   Wire.write(':');
   Wire.endTransmission();
 
@@ -206,47 +238,4 @@ void drive(char array[])
   Wire.write(commands[7]);
   Wire.write(':');
   Wire.endTransmission();
-
-  writeCommands(atoi(commands[0]), atoi(commands[3]), atoi(commands[2]),
-                atoi(commands[1]), atoi(commands[4]), atoi(commands[5]),
-                atoi(commands[6]), 
-                atoi(commands[7]), atoi(commands[8]), atoi(commands[9]),
-                atoi(commands[10]));
 }
-
-void writeCommands(int FR, int FL, int BL, int BR, int UL, int UR, int UB, int ST, int WTI, int WTW,
-                   int c)
-{ 
-  setFR(FR);
-  setFL(FL);
-  setBL(BL);
-  setBR(BR);
-
-  setUL(UL);
-  setUR(UR);
-  setUB(UB);
-
-  setST(ST);
-  setWTI(WTI);
-  setWTW(WTW);
-}
-
-void setFR(int num) { FR.writeMicroseconds(num); }
-
-void setBR(int num) { BR.writeMicroseconds(num); }
-
-void setBL(int num) { BL.writeMicroseconds(num); }
-
-void setFL(int num) { FL.writeMicroseconds(num); }
-
-void setUL(int num) { UL.writeMicroseconds(num); }
-
-void setUR(int num) { UR.writeMicroseconds(num); }
-
-void setUB(int num) { UB.writeMicroseconds(num); }
-
-void setST(int num) { /*shoulderTilt.writeMicroseconds(num);*/ }
-
-void setWTI(int num) { /*wristTilt.writeMicroseconds(num);*/ }
-
-void setWTW(int num) { /*wristTwist.writeMicroseconds(num);*/ }
