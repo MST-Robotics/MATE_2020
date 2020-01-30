@@ -163,15 +163,17 @@ void loop()
       {
         writeString("1");
       }
+      
+      String info = disabledCommand;
 
-      String info = SerialConnection.readStringUntil('\n');
+      info = SerialConnection.readStringUntil('\n');
+      info.remove(COMMAND_SIZE-1);
       info.toCharArray(driveCommands, COMMAND_SIZE - 1);
       drive(driveCommands);
 
       digitalWrite(buzzer, 1);
 
-      // Clear any backlog commands
-      SerialConnection.flush();
+      clearSerial();
     }
     else
     {
@@ -189,6 +191,13 @@ void loop()
   //Rough timer counting
   delay(1);
   digitalWrite(buzzer, 0);
+}
+
+void clearSerial() {
+  while(SerialConnection.available())
+  {
+    SerialConnection.read();
+  }
 }
 
 // Used to serially push out a String with Serial.write()
@@ -212,7 +221,7 @@ void drive(char array[])
     index++;
     ptr = strtok(NULL, ";");
   }
-  
+
   Wire.beginTransmission(11);
   Wire.write(commands[2]);
   Wire.write(commands[1]);
@@ -220,10 +229,8 @@ void drive(char array[])
   Wire.endTransmission();
 
   Wire.beginTransmission(14);
-  Wire.write(commands[2]);
-  Wire.write(commands[1]);
-  //Wire.write(commands[0]);
-  //Wire.write(commands[3]);
+  Wire.write(commands[0]);
+  Wire.write(commands[3]);
   Wire.write(':');
   Wire.endTransmission();
 
