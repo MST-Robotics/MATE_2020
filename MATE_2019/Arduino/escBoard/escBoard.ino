@@ -17,6 +17,8 @@ void setup()
   Wire.begin(10);
   Wire.onReceive(receiveEvent);
 
+  pinMode(PD2, OUTPUT);
+  pinMode(PD5, OUTPUT);
   pinMode(PD3, OUTPUT); //STAT0
   pinMode(PD7, OUTPUT); // Enable
   digitalWrite(PD7, 1);
@@ -25,6 +27,7 @@ void setup()
   
   M0.attach(PD2);
   M1.attach(PD5);  
+
 }
 
 void loop() 
@@ -37,12 +40,12 @@ void loop()
 void receiveEvent(int howMany)
 {
   digitalWrite(PD3, 1);
-  static char commandInput[9];
-  char command1[4];
-  char command2[4];
+  char commandInput[9] = {"15001500:"};
+  char command1[4] = {"1500"};
+  char command2[4] = {"1500"};
   int x = 0;
   
-  while (Wire.available())
+  while (Wire.available() && x<9)
   {
     commandInput[x++] = Wire.read();
   }
@@ -54,14 +57,14 @@ void receiveEvent(int howMany)
       command1[i] = commandInput[i];
       command2[i] = commandInput[i+4];
     }
-  
+    
     for (int i = 0; i < 9; ++i)
     {
       commandInput[i] = '0';
     }
-  
-    commandM0 = atoi(command1);
-    commandM1 = atoi(command2);
+    commandM0 = 1000*(command1[0]-'0')+100*(command1[1]-'0')+10*(command1[2]-'0')+(command1[3]-'0');
+    commandM1 = 1000*(command2[0]-'0')+100*(command2[1]-'0')+10*(command2[2]-'0')+(command2[3]-'0');
+    
     digitalWrite(PD3, 0);
   }
   
