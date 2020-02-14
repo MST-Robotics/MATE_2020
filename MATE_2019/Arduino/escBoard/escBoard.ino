@@ -14,16 +14,18 @@ int commandM1 = MOTOR_NEUTRAL;
   
 void setup() 
 {
-  Wire.begin(10);
+  int i2c_addr = 10;
+  Wire.begin(i2c_addr);
   Wire.onReceive(receiveEvent);
 
   pinMode(PD2, OUTPUT);
   pinMode(PD5, OUTPUT);
   pinMode(PD3, OUTPUT); //STAT0
+  pinMode(PD4, OUTPUT); //STAT1
   pinMode(PD7, OUTPUT); // Enable
   digitalWrite(PD7, 1);
   pinMode(PD6, OUTPUT); // Voltage Set
-  analogWrite(PD6, 128);
+  analogWrite(PD6, 100);
   
   M0.attach(PD2);
   M1.attach(PD5);  
@@ -32,6 +34,12 @@ void setup()
 
 void loop() 
 {
+  static long lastTime = millis();
+  if(millis()-lastTime > 500)
+  {
+    lastTime = millis();
+    digitalWrite(PD4,!digitalRead(PD4));
+  }
   M0.writeMicroseconds(commandM0);
   M1.writeMicroseconds(commandM1);
 }

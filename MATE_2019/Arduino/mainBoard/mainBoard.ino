@@ -11,7 +11,7 @@
 #define LSM9DS1_M 0x1E   // Would be 0x1C if SDO_M is LOW
 #define LSM9DS1_AG 0x6B  // Would be 0x6A if SDO_AG is LOW
 
-#define SerialConnection Serial1
+#define SerialConnection Serial
 
 LSM9DS1 imu;
 
@@ -44,7 +44,7 @@ String disabledCommand = ":1500;1500;1500;1500;1500;1500;1500;1500;1500;1500;0";
 void setup()
 {
   
-  delay(10000); 
+  delay(6000); 
 
   Wire.begin();
   SerialConnection.begin(115200);
@@ -71,7 +71,7 @@ void setup()
   pinMode(water4, INPUT);
 
   // Scream untill IMU connected
-  digitalWrite(buzzer, 1);
+  //digitalWrite(buzzer, 1);
 
   while (!imu.begin())
   {
@@ -112,7 +112,7 @@ void loop()
     delay(90);
     ++timer;
 
-    if (timer > 75)
+    if (timer > 50)
     {
       wireInit = true;
     }
@@ -155,21 +155,23 @@ void loop()
 	    timer = 0;  // Reset timer if valid data received
 
       // Only send data back if data was received
-      if (digitalRead(water4) && digitalRead(water3) && digitalRead(water2) && digitalRead(water1))
-      {
-        writeString("0");
-      }
-      else
-      {
-        writeString("1");
-      }
-      
-      String info = disabledCommand;
+//      if (digitalRead(water4) && digitalRead(water3) && digitalRead(water2) && digitalRead(water1))
+//      {
+//        writeString("0");
+//      }
+//      else
+//      {
+//        writeString("1");
+//      }
+      String info;
+      info = disabledCommand;
 
       info = SerialConnection.readStringUntil('\n');
       info.remove(COMMAND_SIZE-1);
       info.toCharArray(driveCommands, COMMAND_SIZE - 1);
       drive(driveCommands);
+
+      writeString(info);
 
       digitalWrite(buzzer, 1);
 
@@ -182,8 +184,8 @@ void loop()
     }
   }
   
-  // Only run if a command has been received within ~one second
-  if (timer > 250)
+  // Only run if a command has been received within 25 ticks
+  if (timer > 25)
   {
     disabledCommand.toCharArray(driveCommands, COMMAND_SIZE - 1); 
     drive(driveCommands);
@@ -222,15 +224,15 @@ void drive(char array[])
     ptr = strtok(NULL, ";");
   }
 
-  Wire.beginTransmission(11);
-  Wire.write(commands[2]);
-  Wire.write(commands[1]);
+  Wire.beginTransmission(10);
+  Wire.write(commands[0]);
+  Wire.write(commands[3]);
   Wire.write(':');
   Wire.endTransmission();
 
-  Wire.beginTransmission(14);
-  Wire.write(commands[0]);
-  Wire.write(commands[3]);
+  Wire.beginTransmission(11);
+  Wire.write(commands[2]);
+  Wire.write(commands[1]);
   Wire.write(':');
   Wire.endTransmission();
 

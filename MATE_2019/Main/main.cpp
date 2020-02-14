@@ -42,12 +42,24 @@ void transferData(string data)
   // Expects 0 or 1, if water has been detected
   arduino.readSerialPort(output, MAX_DATA_LENGTH);
 
+  cout << " Received: ";
+
   for (char c : output)
+  {
+    cout << c;
+  }
+  cout << endl << endl;
+
+  /*for (char c : output)
   {
     if (c == '1')
     {
       waterLeak = true;
     }
+    else
+    {
+      waterLeak = false;
+        }
   }
 
   if (waterLeak)
@@ -56,24 +68,26 @@ void transferData(string data)
     {
       cout << "WATER ";
     }
-  }
+  }*/
 }
 
 // TODO split out drive and arm to their own files
+// rx ly lx
 void teleop(double FWD, double STR, double RCW)
 {
+  //cout << FWD << "\t" << STR << "\t" << RCW << endl;
   // : is verification character for arduino
   string data = ":";
 
-  PID pitchPID(0.007, 0.0, 0.0);
-  pitchPID.setContinuous(false);
-  pitchPID.setOutputLimits(-1.0, 1.0);
-  pitchPID.setSetpoint(pitchSetpoint);
+  //PID pitchPID(0.007, 0.0, 0.0);
+  //pitchPID.setContinuous(false);
+  //pitchPID.setOutputLimits(-1.0, 1.0);
+  //pitchPID.setSetpoint(pitchSetpoint);
 
-  PID rollPID(0.007, 0.0, 0.0);
-  rollPID.setContinuous(false);
-  rollPID.setOutputLimits(-1.0, 1.0);
-  rollPID.setSetpoint(rollSetpoint);
+  //PID rollPID(0.007, 0.0, 0.0);
+  //rollPID.setContinuous(false);
+  //rollPID.setOutputLimits(-1.0, 1.0);
+  //rollPID.setSetpoint(rollSetpoint);
 
   // Let driver adjust angle of robot if necessary
   if (gamepad1.getButtonPressed(xButtons.A))
@@ -100,19 +114,18 @@ void teleop(double FWD, double STR, double RCW)
 
   // heading adjusts where front is
   double heading = -rad45;
-  double FR = -(-STR * sin(heading) + FWD * cos(heading) - RCW);  // A
-  double BR = (STR * cos(heading) + FWD * sin(heading) - RCW);    // B
-  double BL = -(-STR * sin(heading) + FWD * cos(heading) + RCW);  // C
-  double FL = (STR * cos(heading) + FWD * sin(heading) + RCW);    // D
 
-  double UL = gamepad1.rightTrigger() * 0.6 - gamepad1.leftTrigger() * 1.4 -
-              pitchPID.getOutput(pitch) - rollPID.getOutput(roll) + 0.45;
-  double UR = gamepad1.rightTrigger() - gamepad1.leftTrigger() -
-              pitchPID.getOutput(pitch) * 0.6 + rollPID.getOutput(roll) * 1.4 +
-              0.45;
-  double UB = (gamepad1.rightTrigger() - gamepad1.leftTrigger() +
-               pitchPID.getOutput(pitch) + 0.45) *
-              0.4;
+  // FR AND FL ARE SWAPPED
+  // BR IS INVERTED?
+  // WORKING VALUES 2/13/2020 W/ EXTENSION CORDS
+  double FR = (-STR * sin(heading) - FWD * sin(heading) + RCW);   // A
+  double BR = (STR * cos(heading) + FWD * sin(heading) - RCW);    // B
+  double BL = (-STR * sin(heading) + FWD * cos(heading) - RCW);  // C
+  double FL = (-STR * cos(heading) + FWD * cos(heading) - RCW);    // D
+
+  double UL = -(gamepad1.rightTrigger() - gamepad1.leftTrigger());
+  double UR = -(gamepad1.rightTrigger() - gamepad1.leftTrigger());
+  double UB = -(gamepad1.rightTrigger() - gamepad1.leftTrigger()) * 0.4;
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
@@ -181,20 +194,18 @@ void teleop(double FWD, double STR, double RCW)
   // Claw command + end of command string character
   data.append(to_string((int)gamepad1.getButtonPressed(xButtons.A)) + "\n");
 
-  cout << " Sending: " << data << endl;
+  cout << " Sending: " << data;
   transferData(data);
 }
 
 int main()
 {
-  if (arduino.isConnected())
-  {
-    cout << " Arduino connection made" << endl << endl;
-  }
-  else
+  while (!arduino.isConnected())
   {
     cout << " Error in Arduino port name" << endl << endl;
   }
+
+  cout << " Arduino connection made" << endl << endl;
 
   if (gamepad1.connected())
   {
@@ -204,6 +215,14 @@ int main()
   {
     cout << " Gamepad 1 NOT connected" << endl;
   }
+  if (gamepad2.connected())
+  {
+    cout << " Gamepad 2 connected" << endl;
+  }
+  else
+  {
+    cout << " Gamepad 2 NOT connected" << endl;
+  }
 
   while (true)
   {
@@ -212,13 +231,14 @@ int main()
     if (gamepad1.getButtonPressed(xButtons.Back) || !gamepad1.connected())
     {
       disabled = true;
+      waterLeak = false;
     }
     else if (gamepad1.getButtonPressed(xButtons.Start) && gamepad1.connected())
     {
       disabled = false;
     }
-    teleop(-gamepad1.rightStick_X(), -gamepad1.leftStick_Y(),
-           -gamepad1.leftStick_X());
+    teleop(gamepad1.leftStick_Y(), gamepad1.leftStick_X(),
+           gamepad1.rightStick_X());
     gamepad1.refresh();
     gamepad2.refresh();
   }
