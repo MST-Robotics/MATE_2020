@@ -21,10 +21,7 @@ double rollSetpoint = 0.0;
 
 int yawOffset = 0;
 
-// Change the name of the port with the port name of your computer
-// Must remember that the backslashes are essential so do not remove them
-const char* port = "\\\\.\\COM3";
-SerialPort arduino(port, 115200);
+SerialPort arduino;
 Gamepad gamepad1 = Gamepad(1);
 Gamepad gamepad2 = Gamepad(2);
 
@@ -200,12 +197,19 @@ void teleop(double FWD, double STR, double RCW)
 
 int main()
 {
+  std::cout << "Attempting to connect" << std::endl;
+  int i = 0;
   while (!arduino.isConnected())
   {
-    cout << " Error in Arduino port name" << endl << endl;
-  }
+    std::string port = R"(\\.\COM)" + std::to_string(i++);
 
-  cout << " Arduino connection made" << endl << endl;
+    arduino.openSerialPort(port.c_str(), 115200);
+    if (i > 15)
+    {
+      i = 0;
+    }
+  }
+  std::cout << "Connected" << std::endl;
 
   if (gamepad1.connected())
   {
@@ -226,6 +230,18 @@ int main()
 
   while (true)
   {
+
+	while (!arduino.isConnected())
+    {
+      std::string port = R"(\\.\COM)" + std::to_string(i++);
+
+      arduino.openSerialPort(port.c_str(), 115200);
+      if (i > 15)
+      {
+        i = 0;
+      }
+    }
+
     gamepad1.update();
     gamepad2.update();
     if (gamepad1.getButtonPressed(xButtons.Back) || !gamepad1.connected())

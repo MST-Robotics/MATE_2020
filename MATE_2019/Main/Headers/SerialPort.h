@@ -1,5 +1,3 @@
-/* Zain Ul Mustafa 2017 */
-
 #ifndef SERIALPORT_H
 #define SERIALPORT_H
 
@@ -19,9 +17,10 @@ class SerialPort
   DWORD errors;
 
  public:
-  SerialPort(const char *portName, const int baudRate);
+  SerialPort();
   ~SerialPort();
 
+  void openSerialPort(const char *portName, const int baudRate);
   int readSerialPort(char *buffer, unsigned int buf_size);
   bool writeSerialPort(char *buffer, unsigned int buf_size);
   bool isConnected();
