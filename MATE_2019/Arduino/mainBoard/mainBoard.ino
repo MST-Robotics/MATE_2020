@@ -1,4 +1,3 @@
-// Comment so I can name the commit to close issue
 // Teensy++ 2.0
 
 #include <LSM9DS1_Registers.h>

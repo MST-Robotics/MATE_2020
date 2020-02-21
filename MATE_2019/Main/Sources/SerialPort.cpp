@@ -1,4 +1,3 @@
-// Comment so I can name the commit to close issue
 #include "../Headers/SerialPort.h"
 
 SerialPort::SerialPort()
