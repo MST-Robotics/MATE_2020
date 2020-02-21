@@ -1,6 +1,7 @@
 #ifndef SERIALPORT_H
 #define SERIALPORT_H
 
+// Comment so I can name the commit to close issue
 #define MAX_DATA_LENGTH 255
 
 #include <stdio.h>
