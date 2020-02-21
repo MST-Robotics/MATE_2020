@@ -1,11 +1,13 @@
 #include <iostream>
 
-#include ".\Headers\Gamepad.h"
-#include ".\Headers\PID.h"
-#include ".\Headers\SerialPort.h"
-#include ".\Headers\Utils.h"
+#include "Headers/Gamepad.h"
+#include "Headers/PID.h"
+#include "Headers/SerialPort.h"
+#include "Headers/Utils.h"
 
 using namespace std;
+
+std::string port;
 
 bool disabled = false;
 bool waterLeak = false;
@@ -34,16 +36,28 @@ void transferData(string data)
   delete[] charArray;
 
   // Wait for arduino to process command
-  Sleep(90);
+  Sleep(75);
 
   // Expects 0 or 1, if water has been detected
   arduino.readSerialPort(output, MAX_DATA_LENGTH);
 
   cout << " Received: ";
 
+  bool checked = false;
+  int i = 0;
   for (char c : output)
   {
     cout << c;
+    if (!checked)
+    {
+      if (c == '\0')
+      {
+        arduino.closeSerialPort();
+        arduino.openSerialPort(port.c_str(), 115200);
+      }
+      checked = true;
+    }
+    output[i++] = '\0';
   }
   cout << endl << endl;
 
@@ -72,19 +86,19 @@ void transferData(string data)
 // rx ly lx
 void teleop(double FWD, double STR, double RCW)
 {
-  //cout << FWD << "\t" << STR << "\t" << RCW << endl;
+  // cout << FWD << "\t" << STR << "\t" << RCW << endl;
   // : is verification character for arduino
   string data = ":";
 
-  //PID pitchPID(0.007, 0.0, 0.0);
-  //pitchPID.setContinuous(false);
-  //pitchPID.setOutputLimits(-1.0, 1.0);
-  //pitchPID.setSetpoint(pitchSetpoint);
+  // PID pitchPID(0.007, 0.0, 0.0);
+  // pitchPID.setContinuous(false);
+  // pitchPID.setOutputLimits(-1.0, 1.0);
+  // pitchPID.setSetpoint(pitchSetpoint);
 
-  //PID rollPID(0.007, 0.0, 0.0);
-  //rollPID.setContinuous(false);
-  //rollPID.setOutputLimits(-1.0, 1.0);
-  //rollPID.setSetpoint(rollSetpoint);
+  // PID rollPID(0.007, 0.0, 0.0);
+  // rollPID.setContinuous(false);
+  // rollPID.setOutputLimits(-1.0, 1.0);
+  // rollPID.setSetpoint(rollSetpoint);
 
   // Let driver adjust angle of robot if necessary
   if (gamepad1.getButtonPressed(xButtons.A))
@@ -115,10 +129,10 @@ void teleop(double FWD, double STR, double RCW)
   // FR AND FL ARE SWAPPED
   // BR IS INVERTED?
   // WORKING VALUES 2/13/2020 W/ EXTENSION CORDS
-  double FR = (-STR * sin(heading) - FWD * sin(heading) + RCW);   // A
-  double BR = (STR * cos(heading) + FWD * sin(heading) - RCW);    // B
+  double FR = (-STR * sin(heading) - FWD * sin(heading) + RCW);  // A
+  double BR = (STR * cos(heading) + FWD * sin(heading) - RCW);   // B
   double BL = (-STR * sin(heading) + FWD * cos(heading) - RCW);  // C
-  double FL = (-STR * cos(heading) + FWD * cos(heading) - RCW);    // D
+  double FL = (-STR * cos(heading) + FWD * cos(heading) - RCW);  // D
 
   double UL = -(gamepad1.rightTrigger() - gamepad1.leftTrigger());
   double UR = -(gamepad1.rightTrigger() - gamepad1.leftTrigger());
@@ -201,7 +215,7 @@ int main()
   int i = 0;
   while (!arduino.isConnected())
   {
-    std::string port = R"(\\.\COM)" + std::to_string(i++);
+    port = R"(\\.\COM)" + std::to_string(i++);
 
     arduino.openSerialPort(port.c_str(), 115200);
     if (i > 15)
@@ -230,18 +244,6 @@ int main()
 
   while (true)
   {
-
-	while (!arduino.isConnected())
-    {
-      std::string port = R"(\\.\COM)" + std::to_string(i++);
-
-      arduino.openSerialPort(port.c_str(), 115200);
-      if (i > 15)
-      {
-        i = 0;
-      }
-    }
-
     gamepad1.update();
     gamepad2.update();
     if (gamepad1.getButtonPressed(xButtons.Back) || !gamepad1.connected())

@@ -44,7 +44,7 @@ String disabledCommand = ":1500;1500;1500;1500;1500;1500;1500;1500;1500;1500;0";
 void setup()
 {
   
-  delay(6000); 
+  delay(1000); 
 
   Wire.begin();
   SerialConnection.begin(115200);
@@ -86,7 +86,7 @@ void loop()
   static bool wireInit = false;
   while (!wireInit)
   {
-    Wire.beginTransmission(14);
+    Wire.beginTransmission(10);
     Wire.write("1500");
     Wire.write("1500");
     Wire.write(':');
@@ -112,7 +112,7 @@ void loop()
     delay(90);
     ++timer;
 
-    if (timer > 50)
+    if (timer > 5)
     {
       wireInit = true;
     }

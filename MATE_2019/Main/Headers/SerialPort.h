@@ -1,7 +1,6 @@
 #ifndef SERIALPORT_H
 #define SERIALPORT_H
 
-#define ARDUINO_WAIT_TIME 2000
 #define MAX_DATA_LENGTH 255
 
 #include <stdio.h>
@@ -21,6 +20,7 @@ class SerialPort
   ~SerialPort();
 
   void openSerialPort(const char *portName, const int baudRate);
+  void closeSerialPort();
   int readSerialPort(char *buffer, unsigned int buf_size);
   bool writeSerialPort(char *buffer, unsigned int buf_size);
   bool isConnected();

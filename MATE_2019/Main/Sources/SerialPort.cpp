@@ -1,4 +1,4 @@
-#include "SerialPort.h"
+#include "../Headers/SerialPort.h"
 
 SerialPort::SerialPort()
 {
@@ -6,14 +6,7 @@ SerialPort::SerialPort()
   this->handler = INVALID_HANDLE_VALUE;
 }
 
-SerialPort::~SerialPort()
-{
-  if (this->connected)
-  {
-    this->connected = false;
-    CloseHandle(this->handler);
-  }
-}
+SerialPort::~SerialPort() { closeSerialPort(); }
 
 void SerialPort::openSerialPort(const char *portName, const int baudRate)
 {
@@ -46,10 +39,15 @@ void SerialPort::openSerialPort(const char *portName, const int baudRate)
       {
         this->connected = true;
         PurgeComm(this->handler, PURGE_RXCLEAR | PURGE_TXCLEAR);
-        Sleep(ARDUINO_WAIT_TIME);
       }
     }
   }
+}
+
+void SerialPort::closeSerialPort() 
+{
+  this->connected = false;
+  CloseHandle(this->handler);
 }
 
 int SerialPort::readSerialPort(char *buffer, unsigned int buf_size)
