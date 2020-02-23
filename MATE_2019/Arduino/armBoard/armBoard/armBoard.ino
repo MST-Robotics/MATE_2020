@@ -9,8 +9,8 @@
 
 #define SERVOS 5 //pin 11 is not a PWM Pin! it will not work with the Servo library
 
-#define LED_RECV 8
-#define LED_ERR 12
+#define LED_RECV 12
+#define LED_ERR 8
 
 uint8_t servo_pins[6] = {3, 5, 6, 9, 10, 11}; 
 //uint16_t servo_value[6] = [1500, 1500, 1500, 1500, 1500, 1500];
