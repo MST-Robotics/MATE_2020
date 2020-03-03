@@ -109,6 +109,13 @@ void loop()
     Wire.write("1500");
     Wire.write(':');
     Wire.endTransmission();
+
+	Wire.beginTransmission(14);
+    Wire.write("1500");
+    Wire.write("1500");
+	Wire.write("1500");
+    Wire.write(':');
+    Wire.endTransmission();
     delay(90);
     ++timer;
 
@@ -245,6 +252,13 @@ void drive(char array[])
   Wire.beginTransmission(13);
   Wire.write(commands[6]);
   Wire.write(commands[7]);
+  Wire.write(':');
+  Wire.endTransmission();
+
+  Wire.beginTransmission(14);
+  Wire.write(commands[8]);
+  Wire.write(commands[9]);
+  Wire.write(commands[10]);
   Wire.write(':');
   Wire.endTransmission();
 }
