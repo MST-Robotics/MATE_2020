@@ -6,27 +6,12 @@
 #include <SPI.h>
 #include <SparkFunLSM9DS1.h>
 
-#include <Servo.h>
-
 #define LSM9DS1_M 0x1E   // Would be 0x1C if SDO_M is LOW
 #define LSM9DS1_AG 0x6B  // Would be 0x6A if SDO_AG is LOW
 
 #define SerialConnection Serial
 
 LSM9DS1 imu;
-
-Servo FR;
-Servo BR;
-Servo BL;
-Servo FL;
-
-Servo UL;
-Servo UR;
-Servo UB;
-
-Servo shoulderTilt;
-Servo wristTilt;
-Servo wristTwist;
 
 const int buzzer = 17;
 const int water1 = 20;
@@ -54,19 +39,6 @@ void setup()
   imu.settings.device.mAddress = LSM9DS1_M;
   imu.settings.device.agAddress = LSM9DS1_AG;
 
-  FR.attach(27);
-  BR.attach(14);
-  BL.attach(15);
-  FL.attach(16);
-
-  UL.attach(25);
-  UR.attach(24);
-  UB.attach(26);
-
-//  shoulderTilt.attach(9);
-//  wristTilt.attach(10);
-//  wristTwist.attach(11);
-
   pinMode(buzzer, OUTPUT);
   pinMode(water4, INPUT);
 
@@ -75,7 +47,7 @@ void setup()
 
   while (!imu.begin())
   {
-    delay(500);
+    delay(100);
   }
 
   digitalWrite(buzzer, 0);
@@ -171,7 +143,18 @@ void loop()
       info.toCharArray(driveCommands, COMMAND_SIZE - 1);
       drive(driveCommands);
 
-      writeString(info);
+      writeString(":");
+      if (roll < 10.0 && roll > 0.0)
+      {
+        writeString("0");
+      }
+      writeString(String(roll, 3));
+      writeString(";");
+      if (pitch < 10.0 && pitch > 0.0)
+      {
+        writeString("0");
+      }
+      writeString(String(pitch, 3));
 
       digitalWrite(buzzer, 1);
 
@@ -184,12 +167,12 @@ void loop()
     }
   }
   
-  // Only run if a command has been received within 25 ticks
-  if (timer > 25)
+  // Only run if a command has been received within 100 ticks
+  /*if (timer > 100)
   {
     disabledCommand.toCharArray(driveCommands, COMMAND_SIZE - 1); 
     drive(driveCommands);
-  }
+  }*/
   //Rough timer counting
   delay(1);
   digitalWrite(buzzer, 0);
@@ -247,4 +230,5 @@ void drive(char array[])
   Wire.write(commands[7]);
   Wire.write(':');
   Wire.endTransmission();
+  
 }

@@ -15,9 +15,8 @@ bool waterLeak = false;
 char output[MAX_DATA_LENGTH];
 string imu;
 string prevIMU;
-int pitch = 0;  // Heading up and down
-int roll = 0;   // Angle side to side relative to ground
-
+float pitch = 0;  // Angle forward to back
+float roll = 0;   // Angle side to side
 double pitchSetpoint = 0.0;
 double rollSetpoint = 0.0;
 
@@ -45,6 +44,10 @@ void transferData(string data)
 
   bool checked = false;
   int i = 0;
+
+  pitch = atof(Utils::charToString(output, 1, 6).c_str());
+  roll = atof(Utils::charToString(output, 8, 13).c_str());
+
   for (char c : output)
   {
     cout << c;
@@ -90,15 +93,15 @@ void teleop(double FWD, double STR, double RCW)
   // : is verification character for arduino
   string data = ":";
 
-  // PID pitchPID(0.007, 0.0, 0.0);
-  // pitchPID.setContinuous(false);
-  // pitchPID.setOutputLimits(-1.0, 1.0);
-  // pitchPID.setSetpoint(pitchSetpoint);
+  PID pitchPID(0.07, 0.0, 0.0);
+  pitchPID.setContinuous(false);
+  pitchPID.setOutputLimits(-1.0, 1.0);
+  pitchPID.setSetpoint(pitchSetpoint);
 
-  // PID rollPID(0.007, 0.0, 0.0);
-  // rollPID.setContinuous(false);
-  // rollPID.setOutputLimits(-1.0, 1.0);
-  // rollPID.setSetpoint(rollSetpoint);
+  PID rollPID(0.07, 0.0, 0.0);
+  rollPID.setContinuous(false);
+  rollPID.setOutputLimits(-1.0, 1.0);
+  rollPID.setSetpoint(rollSetpoint);
 
   // Let driver adjust angle of robot if necessary
   if (gamepad1.getButtonPressed(xButtons.A))
@@ -126,17 +129,17 @@ void teleop(double FWD, double STR, double RCW)
   // heading adjusts where front is
   double heading = -rad45;
 
-  // FR AND FL ARE SWAPPED
-  // BR IS INVERTED?
-  // WORKING VALUES 2/13/2020 W/ EXTENSION CORDS
   double FR = (-STR * sin(heading) - FWD * sin(heading) + RCW);  // A
   double BR = (STR * cos(heading) + FWD * sin(heading) - RCW);   // B
   double BL = (-STR * sin(heading) + FWD * cos(heading) - RCW);  // C
   double FL = (-STR * cos(heading) + FWD * cos(heading) - RCW);  // D
 
-  double UL = -(gamepad1.rightTrigger() - gamepad1.leftTrigger());
-  double UR = -(gamepad1.rightTrigger() - gamepad1.leftTrigger());
-  double UB = -(gamepad1.rightTrigger() - gamepad1.leftTrigger()) * 0.4;
+  double UL = -(gamepad1.rightTrigger() - gamepad1.leftTrigger()) +
+              pitchPID.getOutput(pitch) + rollPID.getOutput(roll);
+  double UR = -(gamepad1.rightTrigger() - gamepad1.leftTrigger()) +
+              pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
+  double UB = 0.4 * (-(gamepad1.rightTrigger() - gamepad1.leftTrigger()) -
+                     pitchPID.getOutput(pitch));
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
 
