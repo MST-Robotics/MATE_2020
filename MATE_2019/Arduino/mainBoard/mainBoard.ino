@@ -196,7 +196,6 @@ void loop()
       info = SerialConnection.readStringUntil('\n');
       info.remove(COMMAND_SIZE-1);
       info.toCharArray(driveCommands, COMMAND_SIZE - 1);
-      drive(driveCommands);
 
       // Send back Water Sensor data
       if (digitalRead(water4) && digitalRead(water3) && digitalRead(water2) && digitalRead(water1))
@@ -231,11 +230,13 @@ void loop()
   }
   
   // Only run if a command has been received within 100 ticks
-  /*if (timer > 100)
+  if (loops > 20)
   {
     disabledCommand.toCharArray(driveCommands, COMMAND_SIZE - 1); 
-    drive(driveCommands);
-  }*/
+  }
+
+  drive(driveCommands);
+  
   //Rough timer counting
   delay(1);
   digitalWrite(buzzer, 0);
