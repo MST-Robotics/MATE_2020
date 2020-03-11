@@ -11,9 +11,12 @@ const int MOTOR_NEUTRAL = 1500;
 
 int commandM0 = MOTOR_NEUTRAL;
 int commandM1 = MOTOR_NEUTRAL;
+
+long lastCommandTime = 0;
   
 void setup() 
-{
+{  
+  
   int i2c_addr = 10;
   Wire.begin(i2c_addr);
   Wire.onReceive(receiveEvent);
@@ -40,6 +43,12 @@ void loop()
     lastTime = millis();
     digitalWrite(PD4,!digitalRead(PD4));
   }
+  
+  if (millis()- lastCommandTime > 200) {
+    commandM0 = MOTOR_NEUTRAL;
+    commandM1 = MOTOR_NEUTRAL;
+  }
+  
   M0.writeMicroseconds(commandM0);
   M1.writeMicroseconds(commandM1);
 }
@@ -72,6 +81,8 @@ void receiveEvent(int howMany)
     }
     commandM0 = 1000*(command1[0]-'0')+100*(command1[1]-'0')+10*(command1[2]-'0')+(command1[3]-'0');
     commandM1 = 1000*(command2[0]-'0')+100*(command2[1]-'0')+10*(command2[2]-'0')+(command2[3]-'0');
+
+    lastCommandTime = millis();
     
     digitalWrite(PD3, 0);
   }

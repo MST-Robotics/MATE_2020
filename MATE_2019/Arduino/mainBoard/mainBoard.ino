@@ -34,7 +34,7 @@ const int water4 = 23;
 const int COMMAND_SIZE = 52;
 const int MOTOR_NEUTRAL = 1500;
 
-int timer = 0;
+long lastCommandTime = 0;
 
 String disabledCommand = ":1500;1500;1500;1500;1500;1500;1500;1500;1500;1500;0";
 
@@ -217,6 +217,7 @@ void loop()
       writeString(String(loops));
 
       loops = 0;
+      lastCommandTime = millis();
 
       digitalWrite(buzzer, 1);
 
@@ -229,8 +230,8 @@ void loop()
     }
   }
   
-  // Only run if a command has been received within 100 ticks
-  if (loops > 20)
+  // Only run if a command has been received within 200 milliseconds
+  if (millis() - lastCommandTime > 200)
   {
     disabledCommand.toCharArray(driveCommands, COMMAND_SIZE - 1); 
   }
