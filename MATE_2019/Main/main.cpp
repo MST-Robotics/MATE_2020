@@ -34,8 +34,10 @@ void transferData(string data)
   arduino.writeSerialPort(charArray, data.size() - 1);
   delete[] charArray;
 
+  float* sensors = new float[3];
+
   // Wait for arduino to process command
-  Sleep(75);
+  Sleep(110);
 
   // Expects 0 or 1, if water has been detected
   arduino.readSerialPort(output, MAX_DATA_LENGTH);
@@ -45,8 +47,25 @@ void transferData(string data)
   bool checked = false;
   int i = 0;
 
-  pitch = atof(Utils::charToString(output, 1, 6).c_str());
-  roll = atof(Utils::charToString(output, 8, 13).c_str());
+  char* pch;
+  pch = strtok(output,";");
+
+  int j = 0;
+  while (pch != nullptr)
+  {
+    sensors[j] = atof(pch);
+    pch = strtok(nullptr, ";");
+    ++j;
+  }
+
+  // Process data from Arduino
+  pitch = sensors[2];
+  roll = sensors[1];
+
+  if (sensors[0] == 1)
+  {
+    cout << "WATER DETECTED" << endl;
+  }
 
   for (char c : output)
   {
@@ -56,6 +75,7 @@ void transferData(string data)
       if (c == '\0')
       {
         arduino.closeSerialPort();
+        cout << "CONNECTION LOST: ATTEMPTING TO RECONNECT" << endl;
         arduino.openSerialPort(port.c_str(), 115200);
       }
       checked = true;
@@ -63,26 +83,6 @@ void transferData(string data)
     output[i++] = '\0';
   }
   cout << endl << endl;
-
-  /*for (char c : output)
-  {
-    if (c == '1')
-    {
-      waterLeak = true;
-    }
-    else
-    {
-      waterLeak = false;
-        }
-  }
-
-  if (waterLeak)
-  {
-    for (int i = 0; i < 50; ++i)
-    {
-      cout << "WATER ";
-    }
-  }*/
 }
 
 // TODO split out drive and arm to their own files
@@ -93,36 +93,24 @@ void teleop(double FWD, double STR, double RCW)
   // : is verification character for arduino
   string data = ":";
 
-  PID pitchPID(0.07, 0.0, 0.0);
+  PID pitchPID(0.015, 0.0005, 0.0);
   pitchPID.setContinuous(false);
   pitchPID.setOutputLimits(-1.0, 1.0);
   pitchPID.setSetpoint(pitchSetpoint);
 
-  PID rollPID(0.07, 0.0, 0.0);
+  PID rollPID(0.008, 0.001, 0.0);
   rollPID.setContinuous(false);
   rollPID.setOutputLimits(-1.0, 1.0);
   rollPID.setSetpoint(rollSetpoint);
 
-  // Let driver adjust angle of robot if necessary
+  // Reset level angle of robot if necessary.
   if (gamepad1.getButtonPressed(xButtons.A))
   {
-    pitchSetpoint += -0.01;
-  }
-  else if (gamepad1.getButtonPressed(xButtons.Y))
-  {
-    pitchSetpoint += 0.01;
+    pitchSetpoint = pitch;
+    rollSetpoint = roll;
   }
 
-  if (gamepad1.getButtonPressed(xButtons.B))
-  {
-    rollSetpoint += -0.01;
-  }
-  else if (gamepad1.getButtonPressed(xButtons.X))
-  {
-    rollSetpoint += 0.01;
-  }
-
-  // Will not reach full power diagonally because of controller input (depending
+  // Note: Will not reach full power diagonally because of controller input (depending
   // on controller)
   const double rad45 = 45.0 * 3.14159 / 180.0;
 
@@ -138,7 +126,7 @@ void teleop(double FWD, double STR, double RCW)
               pitchPID.getOutput(pitch) + rollPID.getOutput(roll);
   double UR = -(gamepad1.rightTrigger() - gamepad1.leftTrigger()) +
               pitchPID.getOutput(pitch) - rollPID.getOutput(roll);
-  double UB = 0.4 * (-(gamepad1.rightTrigger() - gamepad1.leftTrigger()) -
+  double UB = 0.7 * (-(gamepad1.rightTrigger() - gamepad1.leftTrigger()) -
                      pitchPID.getOutput(pitch));
 
   double* vals[] = {&FR, &BR, &BL, &FL, &UL, &UR, &UB};
