@@ -6,6 +6,8 @@
 class Utils
 {
  public:
+  static std::string charToString(const char* val, int start, int stop);
+
   // Converts a number from range a-b to range c-d
   static double convertRange(double oldMin, double oldMax, double newMin,
                              double newMax, double oldValue);

@@ -331,3 +331,5 @@ ASALocalRun/
 *.sln
 *.filters
 *.vcxproj
+MATE_2019/Main/enc_temp_folder/
+MATE_2019/Arduino/calibration/

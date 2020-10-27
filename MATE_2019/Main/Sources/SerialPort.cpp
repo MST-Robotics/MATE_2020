@@ -1,25 +1,21 @@
-#include "..\Headers\SerialPort.h"
+#include "../Headers/SerialPort.h"
 
-SerialPort::SerialPort(const char *portName, const int baudRate)
+SerialPort::SerialPort()
+{
+  this->connected = false;
+  this->handler = INVALID_HANDLE_VALUE;
+}
+
+SerialPort::~SerialPort() { closeSerialPort(); }
+
+void SerialPort::openSerialPort(const char *portName, const int baudRate)
 {
   this->connected = false;
 
   this->handler =
       CreateFileA(static_cast<LPCSTR>(portName), GENERIC_READ | GENERIC_WRITE,
                   0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-  if (this->handler == INVALID_HANDLE_VALUE)
-  {
-    if (GetLastError() == ERROR_FILE_NOT_FOUND)
-    {
-      printf("ERROR: Handle was not attached. Reason: %s not available\n",
-             portName);
-    }
-    else
-    {
-      printf("ERROR!!!");
-    }
-  }
-  else
+  if (this->handler != INVALID_HANDLE_VALUE)
   {
     DCB dcbSerialParameters = {0};
 
@@ -43,19 +39,15 @@ SerialPort::SerialPort(const char *portName, const int baudRate)
       {
         this->connected = true;
         PurgeComm(this->handler, PURGE_RXCLEAR | PURGE_TXCLEAR);
-        Sleep(ARDUINO_WAIT_TIME);
       }
     }
   }
 }
 
-SerialPort::~SerialPort()
+void SerialPort::closeSerialPort() 
 {
-  if (this->connected)
-  {
-    this->connected = false;
-    CloseHandle(this->handler);
-  }
+  this->connected = false;
+  CloseHandle(this->handler);
 }
 
 int SerialPort::readSerialPort(char *buffer, unsigned int buf_size)

@@ -1,5 +1,15 @@
 #include "..\Headers\Utils.h"
 
+std::string Utils::charToString(const char* val, int start, int stop)
+{
+  std::string s = "";
+  for (int i = start; i <= stop; ++i)
+  {
+    s += val[i];
+  }
+  return s;
+}
+
 double Utils::convertRange(double oldMin, double oldMax, double newMin,
                            double newMax, double oldValue)
 {
