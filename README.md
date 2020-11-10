@@ -1,2 +1,2 @@
-# MATE_2019
-Code used for our ROV in the MATE 2019 competion
+# MATE_2020
+Code used for our ROV in the MATE 2020 competition
